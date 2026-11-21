@@ -47,7 +47,11 @@ Codex: codex-cli 0.171.0
 
 -Finally, asked Codex to explain in detail on how to run this file and updated the README.md file.
 
-# How to run this app?
+# Hosted it using Github pages
+
+https://rojeshdangol.github.io/istg6005-little-cloud/project/
+
+# How to run this app locally?
 
 Rojesh's Music Studio runs in your browser. You'll need Python 3 to start a local web server. The app's HTML, CSS, and JavaScript are all in project/index.html, so there's nothing to build or install for the app itself.
 
@@ -98,3 +102,5 @@ Keep the terminal open and visit http://localhost:8000/ in your browser. Press C
 - You see a directory listing or a 404. Run the server from the folder containing README.md and keep --directory project in the command.
 - You hear nothing. Click Load demo and Play, then check that the browser tab and device audio are unmuted.
 - Recording won't start. Open the app at http://localhost:8000/ and allow microphone access in the browser's site settings. If you're using another port, open the app at that localhost address.
+
+
