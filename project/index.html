@@ -1,0 +1,1590 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rojesh's Music Studio</title>
+<style>
+  :root{color-scheme:dark;font-family:system-ui,sans-serif;background:#10151a;color:#edf5f4;--muted:#a7b8c0;--line:#303e46;--accent:#8ef4cf}
+  *{box-sizing:border-box} body{margin:0} main{max-width:1200px;margin:auto;padding:clamp(20px,5vw,72px)}
+  header{padding:16px 0 28px} h1{font-size:clamp(2.6rem,7vw,5rem);line-height:1;margin:0;letter-spacing:-.07em} p{color:var(--muted);line-height:1.55}
+  .panel{background:#192229;border:1px solid var(--line);border-radius:20px;overflow:hidden}
+  .toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:18px;border-bottom:1px solid var(--line)}
+  button,input,select{font:inherit;color:inherit;background:#26343d;border:1px solid #43535d;border-radius:8px;padding:8px 11px} button{cursor:pointer} button:hover{filter:brightness(1.25)} :focus-visible{outline:2px solid white;outline-offset:2px}
+  #play{background:var(--accent);color:#14241f;font-weight:750;min-width:102px} #tempo{width:75px} .spacer{flex:1} .table-wrap{overflow:auto;padding:14px}
+  table{width:100%;min-width:860px;border-spacing:4px;table-layout:fixed} thead th{font-size:.8rem;color:var(--muted);height:28px} thead th:first-child{width:220px;text-align:left} tbody th{text-align:left;font-size:.875rem;white-space:nowrap} th select{font-size:.875rem;padding:4px}
+  .track{display:flex;align-items:center;gap:7px;justify-content:space-between;padding-right:9px} .audition{width:28px;height:28px;padding:0;color:var(--voice)}
+  .step{width:100%;height:40px;padding:0;font-size:.72rem;font-weight:700;border-color:#3b4e59;background:#24313a} .downbeat{background:#30414b} .active{background:var(--voice);color:#132027;border-color:transparent} .current{outline:2px solid #fff;outline-offset:-2px} thead .current{background:#43535d;border-radius:5px;outline:0}
+  .footer{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:0 18px 15px;color:var(--muted);font-size:.875rem}
+  .roll-heading{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:14px 18px 0} .roll-heading h2{margin:0;font-size:1.25rem}
+  .piano-key{width:100%;text-align:left;background:#e4eaf1;color:#192229;padding:4px 10px;font-weight:700} .piano-key.sharp{background:#11191f;color:#edf5f4}
+  #roll-table thead th:first-child{width:80px} #roll-table .step{height:27px} #roll-table .sharp-row .step:not(.active){background:#1c272f}
+  #roll-scroll{max-height:56vh} #roll-table thead{position:sticky;top:0;background:#192229;z-index:1}
+
+  :root{background:#101016;color:#faf6ec;--muted:#b8b4c2;--line:#3a3546;--accent:#dcfa7c}
+  body{min-height:100vh;background:radial-gradient(ellipse at 88% 0%,#332346 0%,transparent 44%),#101016}
+  main{max-width:1320px;padding-block:clamp(34px,7vw,96px)}
+  header{position:relative;isolation:isolate;overflow:hidden;min-height:190px;padding:clamp(25px,5vw,60px);margin-bottom:24px;border:1px solid #524360;border-radius:22px;background:linear-gradient(105deg,#201a2d 24%,#342245)}
+  header::after{content:"";position:absolute;z-index:-1;right:-90px;top:50%;width:460px;aspect-ratio:1;transform:translateY(-50%);border-radius:50%;background:repeating-radial-gradient(circle,transparent 0 11px,#b585ee50 12px 13px,transparent 14px 20px);mask-image:linear-gradient(90deg,transparent,#000 44%);opacity:.8;pointer-events:none}
+  h1{max-width:850px;font-family:"Avenir Next",Avenir,"Segoe UI",system-ui,sans-serif;font-size:clamp(2.65rem,8.3vw,7.2rem);font-weight:850;line-height:.92;letter-spacing:-.075em}
+  .studio-owner{display:block;margin-bottom:.34em;color:#e0c5f8;font-size:.4em;font-weight:700;letter-spacing:-.035em}
+  .studio-name{display:inline-block;padding:0 .1em .12em 0;color:#f8ecff}
+  @supports (background-clip:text){.studio-name{background:linear-gradient(105deg,#fff8f2 10%,#e8cfff 55%,#b9e9f4);background-clip:text;color:transparent}}
+  .studio-tagline{display:flex;align-items:center;gap:12px;width:fit-content;margin:clamp(12px,2.5vw,24px) 0 0;color:#e8dff2;font-family:ui-monospace,"Cascadia Mono",monospace;font-size:.875rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+  .studio-tagline::before{content:"";width:32px;height:2px;border-radius:2px;background:#b8a0e8}
+  .panel{background:#17151e;border-color:#473e55;box-shadow:0 18px 60px #0005}
+  .toolbar{background:#221d2c;padding:16px 20px;border-color:var(--line)}
+  button,input,select{background:#30283d;border-color:#504460}
+  #play{background:var(--accent);color:#1b2714;border-color:transparent;box-shadow:0 3px 0 #799840}
+  #play[aria-pressed="true"]{background:#f6ad9b;box-shadow:0 3px 0 #9e5f55}
+  .table-wrap{padding:14px 15px 18px;scrollbar-color:#6a587e #17151e}
+  table{border-spacing:5px}
+  thead th:not(:first-child){font-variant-numeric:tabular-nums}
+  thead th:nth-child(4n+2){color:#e7d9f1}
+  tr > :nth-child(4n+2){padding-left:5px}
+  .track{padding:6px 8px;border-radius:9px;background:#24202e;border-left:3px solid var(--voice)}
+  .audition{background:#18151f;border-color:#4c4059}
+  .track button:last-child:not(.audition){font-size:.875rem;padding:5px 8px}
+  .step{background:#272231;border-color:#40364e;box-shadow:inset 0 -3px #110d1a55;transition:background-color .12s,border-color .12s}
+  .step.downbeat{background:#32293e;border-color:#594865}
+  .step.active{background:var(--voice);border-color:transparent;color:#21192b}
+  .step.current{outline:2px solid #fff;outline-offset:-3px}
+  thead .current{background:var(--accent);color:#1b2714!important}
+  .footer{padding:13px 20px;border-top:1px solid var(--line);background:#201b29}
+  #roll-table thead{background:#17151e}
+  #roll-table .sharp-row .step:not(.active){background:#211b2a}
+  .piano-key.sharp{background:#272032}
+  .workspace-panel{margin-top:22px;padding:clamp(16px,3vw,25px)}
+  .workspace-panel h2{margin:0;font-size:1.35rem}
+  .workspace-panel p{margin:8px 0 14px}
+  .workspace-heading,.pattern-form,.pattern-actions,.clip-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .workspace-heading{justify-content:space-between}
+  .pattern-form{padding:12px 20px;border-bottom:1px solid var(--line);background:#201b29}
+  .pattern-form input{width:min(100%,240px)}
+  #new-pattern{margin-inline-start:auto;color:var(--accent);font-weight:700}
+  .pattern-list,.song-timeline{list-style:none;margin:14px 0 0;padding:0;display:flex;gap:10px}
+  .pattern-list{flex-wrap:wrap}
+  .pattern-card,.song-clip{min-width:160px;padding:12px;border:1px solid #51445f;border-radius:10px;background:#24202e}
+  .pattern-card.selected,.song-clip.sounding{border-color:var(--accent)}
+  .pattern-card[draggable],.song-clip[draggable]{cursor:grab}
+  .pattern-card.dragging,.song-clip.dragging{opacity:.5}
+  .pattern-card strong,.song-clip strong{display:block;margin-bottom:8px;overflow-wrap:anywhere}
+  .song-scroll{--bar-width:195px;--bar-gap:0px;overflow:auto;scrollbar-color:#6a587e #17151e}
+  .song-timeline,.song-ruler{width:max-content;gap:var(--bar-gap)}
+  .song-timeline{margin:8px 0 0;padding:0 0 8px}
+  .song-ruler{position:relative;display:flex;padding-bottom:9px}
+  .ruler-bar{flex:0 0 var(--bar-width);width:var(--bar-width);display:grid;grid-template-columns:repeat(4,1fr);color:var(--muted);font-size:.8rem}
+  .ruler-bar span{border-left:1px solid #645671;padding-left:5px}
+  .ruler-bar span:first-child{color:#f2e9fd;border-color:#c1acdb;font-weight:700}
+  .song-progress{position:absolute;bottom:0;left:0;height:5px;width:0;max-width:100%;border-radius:0 4px 4px 0;background:#dcfa7c80;box-shadow:0 0 10px #dcfa7c40;pointer-events:none}
+  .song-progress::after{content:"";position:absolute;right:0;top:-3px;width:2px;height:11px;background:var(--accent)}
+  .song-clip,.song-slot{flex:0 0 var(--bar-width);width:var(--bar-width);min-height:108px}
+  .song-clip{position:relative;display:flex;flex-direction:column;justify-content:center;align-items:stretch;padding:9px;background:#1c1825}
+  .song-clip .clip-name{margin:0 24px 7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;font-family:"Avenir Next",Avenir,"Segoe UI",system-ui,sans-serif;font-size:.875rem;font-weight:650;letter-spacing:.025em;color:#f0ebff}
+  .song-clip .pattern-preview{width:100%;margin:0}
+  .song-clip .remove-clip{position:absolute;top:3px;right:4px;width:27px;height:27px;padding:0;background:transparent;border-color:transparent;color:#f2e9fd;font-size:1.2rem;line-height:1;opacity:.55}
+  .song-clip .remove-clip:hover,.song-clip .remove-clip:focus-visible{opacity:1;background:#30283d}
+  .pattern-preview{display:grid;grid-template-columns:repeat(16,minmax(0,1fr));gap:2px;margin:0 0 9px;padding:5px;border-radius:5px;background:#14111b}
+  .pattern-preview span{height:5px;border-radius:1px;background:#30283e}
+  .pattern-preview span:nth-child(4n+1){background:#493c59}
+  .pattern-preview span.on{background:var(--pad-color)}
+  .song-slot{display:grid;place-content:center;gap:5px;text-align:center;border:2px dashed #665776;border-radius:10px;color:var(--muted);padding:12px}
+  .song-timeline .drop-target{outline:2px solid var(--accent);outline-offset:-3px;background:#32352b}
+  .song-clip.sounding{background:#333b29}
+  .song-clip small{display:block;margin-bottom:5px;color:var(--muted)}
+  .pattern-actions button,.clip-actions button{font-size:.875rem;padding:5px 7px}
+  .song-panel{border-color:#3c4b61;background:linear-gradient(155deg,#1d2437,#141721 70%)}
+  #play-song{background:#a9def9;color:#122534;border-color:transparent;font-weight:750}
+  #play-song[aria-pressed="true"]{background:#ffd1a4;color:#382315}
+  .song-scroll{padding:12px 12px 4px;border:1px solid #39465c;border-radius:12px;background:#0e111a;scrollbar-color:#56738b #151a27}
+  .song-ruler{padding-bottom:14px;background:linear-gradient(0deg,#34465d 1px,transparent 1px) left bottom/100% 7px no-repeat}
+  .ruler-bar{font-family:ui-monospace,monospace;color:#a5b4c7;font-variant-numeric:tabular-nums}
+  .ruler-bar span{display:block;min-height:24px;border-color:#38475d;padding:3px 0 0 6px}
+  .ruler-bar span:first-child{border-color:#a9def9;color:#d5f3ff}
+  .song-progress{height:4px;background:#71dcfa80;box-shadow:0 0 12px #71dcfa6b}
+  .song-progress::after{width:3px;top:-5px;height:14px;background:#dcfaff;box-shadow:0 0 8px #71dcfa}
+  .song-clip{border-color:#4d587d;background:linear-gradient(150deg,#2e3351,#22253a);padding-inline:10px}
+  .song-clip .pattern-preview{background:#161b2c;padding:7px;gap:3px}
+  .song-clip .pattern-preview span{background:#292f48}
+  .song-clip .pattern-preview span:nth-child(4n+1){background:#404a6a}
+  .song-clip .pattern-preview span.on{background:var(--pad-color)}
+  .song-clip.sounding{border-color:#98e6ff;background:#293e54;box-shadow:inset 0 0 0 1px #98e6ff45}
+  .song-slot{background:#2a2229;border-color:#806b75;color:#dfcbd3}
+  .song-timeline > li{border-radius:0}
+  .song-timeline > li:first-child{border-start-start-radius:8px;border-end-start-radius:8px}
+  .song-timeline > li:last-child{border-start-end-radius:8px;border-end-end-radius:8px}
+  .song-slot.sounding{border-color:#98e6ff}
+  .song-timeline .drop-target{outline-color:#98e6ff;background:#263e51}
+  .voice-lane{position:relative;width:calc(var(--bar-width) * var(--lane-bars,1));min-height:calc(8px + var(--voice-rows,1) * 53px);margin:0 0 8px;padding:0;list-style:none;border-block:1px solid #39465c;background:repeating-linear-gradient(90deg,#324758 0 1px,transparent 1px var(--bar-width)),#172330;color:#b7cddd}
+  .voice-lane[data-empty]::before{content:'Drop voice here';display:block;padding:14px 12px;font-size:.8rem}
+  .voice-lane.drop-target::after{content:'';position:absolute;z-index:2;inset-block:0;left:calc(var(--bar-width) * var(--drop-bar,0));width:2px;background:#98e6ff;pointer-events:none}
+  .voice-clip,.voice-take{padding:6px;border:1px solid #467b83;background:#21373f;border-radius:6px;min-width:0}
+  .voice-clip{position:absolute;z-index:1;left:calc(var(--bar-width) * var(--clip-start));top:calc(4px + var(--voice-row,0) * 53px);width:max(44px,calc(var(--bar-width) * var(--clip-bars)));height:49px;padding:4px;overflow:hidden}
+  .voice-clip[draggable],.voice-take[draggable]{cursor:grab}
+  .voice-clip.dragging,.voice-take.dragging{opacity:.55}
+  .voice-clip-header{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:.8rem}
+  .voice-clip-header button{padding:0 5px;line-height:1.2}
+  .voice-clip-header span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .voice-wave{display:flex;align-items:center;justify-content:space-between;gap:2px;height:21px;margin-top:4px}
+  .voice-wave span{flex:1;border-radius:2px;background:#81ded4}
+  .voice-clip .voice-wave{height:18px;margin-top:3px}
+  .voice-controls{margin-top:14px}
+  .voice-volume{display:flex;align-items:center;gap:9px;margin:10px 0 5px;color:var(--muted);font-size:.875rem}
+  .voice-volume input{width:min(150px,40vw);margin:0;padding:0;accent-color:#81ded4;cursor:pointer}
+  .voice-volume output{min-width:4ch;font-variant-numeric:tabular-nums}
+  #record-voice[aria-pressed="true"]{background:#f8ad9f;color:#35201c}
+  #voice-takes{display:flex;flex-wrap:wrap;gap:8px;list-style:none;margin:10px 0 0;padding:0}
+  .voice-take{min-width:170px}
+  .voice-take .clip-actions{margin-top:6px}
+  #voice-status{display:block;margin-top:6px;color:var(--muted)}
+  .pattern-card,.song-clip{border-top:3px solid var(--pattern-color);background:linear-gradient(150deg,color-mix(in srgb,var(--pattern-color) 23%,#171522),#1b1827 85%)}
+  .pattern-card strong,.song-clip .clip-name{color:color-mix(in srgb,var(--pattern-color) 42%,#fbf7ff)}
+  .pattern-card.selected{border-color:var(--pattern-color)}
+  .song-clip.sounding{border-top-color:var(--pattern-color)}
+  button:disabled{cursor:default;opacity:.5;filter:none}
+  .projects-toggle{font-weight:700}
+  .instrument-select{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:4px 5px;text-align:left;background:transparent;border-color:transparent;font-size:.875rem}
+  .instrument-select:hover{background:#342b42;border-color:#504460}
+  #add-instrument{padding:3px 12px;font-size:1.25rem;line-height:1.2;color:var(--accent)}
+  .instrument-dialog{width:min(420px,calc(100% - 32px));padding:20px;border:1px solid #594969;border-radius:14px;background:#201b2b;color:inherit}
+  .instrument-dialog::backdrop{background:#09070db3}
+  .instrument-dialog h2{margin:0;font-size:1.25rem}
+  #instrument-options{display:grid;gap:7px;margin-top:14px}
+  #instrument-options button{text-align:left}
+  #instrument-options button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+  .projects-toggle span{margin-right:6px;color:var(--accent)}
+  .projects-drawer{position:fixed;inset:0 0 0 auto;margin:0;width:min(390px,100%);height:100%;max-height:none;max-width:none;padding:22px;overflow:auto;color:inherit;background:#201b2b;border:0;border-left:1px solid #534566}
+  .projects-drawer::backdrop{background:#09070db3}
+  .projects-drawer h2{margin:0}
+  .projects-drawer form,.project-list{display:grid;gap:9px;margin:18px 0}
+  .project-list{padding:0;list-style:none}
+  .project-list button{width:100%;text-align:left;overflow-wrap:anywhere}
+  .project-list button[aria-current]{border-color:var(--accent);color:var(--accent)}
+  #project-status{display:block;color:var(--muted)}
+  @media(max-width:550px){header::after{opacity:.36;right:-245px}.toolbar{padding:14px}.toolbar .spacer{display:none}.footer{padding-inline:14px}}
+</style>
+</head>
+<body>
+<main>
+  <header><h1><span class="studio-owner">Rojesh's</span> <span class="studio-name">Music Studio</span></h1><p class="studio-tagline">Make a beat</p></header>
+  <dialog id="projects-drawer" class="projects-drawer" aria-labelledby="projects-title">
+    <div class="workspace-heading"><h2 id="projects-title">Projects</h2><button id="close-projects" type="button" autofocus>Close</button></div>
+    <form id="project-form">
+      <label for="project-name">Project name</label>
+      <input id="project-name" maxlength="60" placeholder="Untitled project">
+      <div class="pattern-actions"><button id="save-project" type="submit">Save project</button><button id="new-project" type="button">New project</button><button id="open-project-file" type="button">Open project file</button><button id="choose-folder" type="button">Choose save folder</button></div>
+      <input id="project-file" type="file" accept=".json,application/json" hidden>
+    </form>
+    <output id="folder-status" role="status"></output>
+    <p id="empty-projects">No saved projects yet.</p>
+    <ul id="project-list" class="project-list" aria-label="Saved projects"></ul>
+    <output id="project-status" role="status"></output>
+  </dialog>
+  <dialog id="instrument-dialog" class="instrument-dialog" aria-labelledby="instrument-title">
+    <div class="workspace-heading"><h2 id="instrument-title">Choose a sound</h2><button id="close-instruments" type="button" autofocus>Close</button></div>
+    <div id="instrument-options"></div>
+  </dialog>
+  <section class="panel" aria-label="Music sequencer">
+    <div class="toolbar">
+      <button id="play" type="button" aria-pressed="false">▶ Play</button>
+      <label>Tempo <input id="tempo" type="number" min="45" max="220" value="108" aria-label="Tempo in beats per minute"> BPM</label>
+      <span class="spacer"></span>
+      <button id="demo" type="button">Load demo</button>
+      <button id="open-projects" class="projects-toggle" type="button" aria-haspopup="dialog" aria-controls="projects-drawer"><span aria-hidden="true">☰</span>Projects</button>
+    </div>
+    <form id="pattern-form" class="pattern-form" aria-label="Save pattern">
+      <input id="pattern-name" aria-label="Pattern name" placeholder="Pattern 1" maxlength="40">
+      <button type="submit">Save pattern</button>
+      <button id="update-pattern" type="button" disabled>Update loaded pattern</button>
+      <button id="clear" type="button">Clear pattern</button>
+      <button id="new-pattern" type="button">New pattern</button>
+    </form>
+    <div id="sequencer" class="table-wrap" tabindex="0" aria-label="16-step pattern grid">
+      <table><thead><tr id="beats"><th scope="col">Instrument</th></tr></thead><tbody id="tracks"></tbody><tfoot><tr><td colspan="17"><button id="add-instrument" type="button" aria-label="Add instrument" title="Add instrument">+</button></td></tr></tfoot></table>
+    </div>
+    <section id="note-roll" aria-labelledby="roll-title" hidden>
+      <div class="roll-heading"><button id="back" type="button">Back to sequencer</button><h2 id="roll-title">Piano roll</h2></div>
+      <p style="margin:8px 18px">Tap a key to hear it. Add notes in the same column to play a chord.</p>
+      <div id="roll-scroll" class="table-wrap" tabindex="0" aria-labelledby="roll-title">
+        <table id="roll-table"><thead><tr id="roll-beats"><th scope="col">Pitch</th></tr></thead><tbody id="roll-notes"></tbody></table>
+      </div>
+    </section>
+    <div class="footer"><span id="sequencer-tip">Tap a step to toggle it. Open a Roll to write chords and melodies.</span><span id="status" role="status"></span></div>
+  </section>
+  <section class="panel workspace-panel" aria-labelledby="patterns-heading">
+    <h2 id="patterns-heading">Pattern library</h2>
+    <p>Drag a saved pattern into a song box, or use Add to song.</p>
+    <p id="empty-library">No saved patterns yet.</p>
+    <ul id="pattern-list" class="pattern-list" aria-label="Saved patterns"></ul>
+  </section>
+  <section class="panel workspace-panel song-panel" aria-labelledby="song-heading">
+    <div class="workspace-heading"><h2 id="song-heading">Song timeline</h2><div class="clip-actions"><button id="add-empty-bar" type="button">Add empty bar</button><button id="play-song" type="button" disabled>▶ Play song</button><button id="download-song" type="button" disabled>Download WAV</button></div></div>
+    <p id="song-details">Add patterns from the library. They play from left to right at the studio tempo.</p>
+    <output id="download-status" role="status"></output>
+    <div class="song-scroll" tabindex="0" aria-label="Scrollable song timeline">
+      <div id="song-ruler" class="song-ruler" aria-hidden="true"><div id="song-progress" class="song-progress" hidden></div></div>
+      <ol id="song-timeline" class="song-timeline" aria-label="Patterns in playback order"></ol>
+      <div class="voice-volume"><label for="voice-volume">Voice volume</label><input id="voice-volume" type="range" min="0" max="100" value="100"><output id="voice-volume-value" for="voice-volume" aria-hidden="true">100%</output></div>
+      <ol id="voice-lane" class="voice-lane" aria-label="Voice recordings by bar"></ol>
+    </div>
+    <div class="workspace-heading voice-controls"><h2>Voice recordings</h2><button id="record-voice" type="button" aria-pressed="false">● Start recording</button></div>
+    <p>Record a take, then drag it into the voice lane below the patterns.</p>
+    <output id="voice-status" role="status"></output>
+    <ul id="voice-takes" aria-label="Recorded takes"></ul>
+  </section>
+</main>
+<script>
+  const defaultVoices = [
+    { name: 'Kick', id: 'kick', color: '#fa957d', demo: {0:1,6:1,8:1,14:1} },
+    { name: '808', id: '808', color: '#f5a969', demo: {7:1,15:1} },
+    { name: 'Clap', id: 'clap', color: '#f7a9cb', demo: {4:1,12:1} },
+    { name: 'Snare', id: 'snare', color: '#fa957d', demo: {4:1,12:1} },
+    { name: 'Hi-hat', id: 'hat', color: '#fa957d', demo: {0:1,2:1,4:1,6:1,8:1,10:1,12:1,14:1} },
+    { name: 'Guitar', id: 'guitar', color: '#f6c979', root: 60, demo: {2:64,6:67,10:64,14:69} },
+    { name: 'Piano', id: 'piano', color: '#a8baff', root: 60, demo: {0:72,3:67,8:69,11:64,15:67} },
+    { name: 'Bass', id: 'bass', color: '#8ef4cf', root: 36, demo: {0:36,4:36,8:33,12:43} }
+  ];
+  const steps = 16;
+  const extraVoices = [
+    {id:'rimshot', name:'Rimshot'}, {id:'tambourine', name:'Tambourine'}, {id:'shaker', name:'Shaker'},
+    {id:'electric-piano', name:'Electric piano', root:60}, {id:'organ', name:'Organ', root:60},
+    {id:'synth-lead', name:'Synth lead', root:60}, {id:'synth-bass', name:'Synth bass', root:36}
+  ];
+  const instrumentChoices = [...defaultVoices, ...extraVoices];
+  let voices = [...defaultVoices];
+  let kit = {};
+  function trackVoices(extraTracks) {
+    const additions = Array.isArray(extraTracks) ? extraTracks.flatMap(id => instrumentChoices.filter(choice => choice.id === id)) : [];
+    return [...defaultVoices, ...additions.map((choice, index) => ({
+      ...choice, id: `extra-track-${index + 1}`, sound: choice, demo: {},
+      color: choice.color || (choice.root ? '#bca9f4' : '#efb782')
+    }))];
+  }
+  function selectedVoice(voice, selection = kit) {
+    return instrumentChoices.find(choice => choice.id === selection[voice.id] && Boolean(choice.root) === Boolean(voice.root)) || voice.sound || voice;
+  }
+  const notes = ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
+  const noteName = note => notes[note % 12] + (Math.floor(note / 12) - 1);
+  const asNotes = value => Array.isArray(value) ? value : value === null ? [] : [value];
+  const validNote = note => Number.isInteger(note) && note > 0 && note < 128;
+  const emptyTrack = () => Array(steps).fill(null);
+  const makePattern = (demo, trackList = voices) => trackList.map(voice => demo ? Array.from({length: steps}, (_, step) => voice.demo[step] ?? null) : emptyTrack());
+  const tempo = document.querySelector('#tempo');
+  const status = document.querySelector('#status');
+  const play = document.querySelector('#play');
+  const playSong = document.querySelector('#play-song');
+  const downloadSong = document.querySelector('#download-song');
+  const downloadStatus = document.querySelector('#download-status');
+  let exportingSong = false;
+  let saveFolder = null;
+  const canChooseFolder = typeof window.showDirectoryPicker === 'function';
+  const folderStatus = document.querySelector('#folder-status');
+  const chooseFolder = document.querySelector('#choose-folder');
+  chooseFolder.hidden = !canChooseFolder;
+  folderStatus.textContent = canChooseFolder ? 'No save folder selected.' : 'Files use your browser’s download settings.';
+  async function pickSaveFolder() {
+    saveFolder = await window.showDirectoryPicker({id: 'rojesh-studio', mode: 'readwrite'});
+    folderStatus.textContent = `Save folder: ${saveFolder.name}`;
+    return saveFolder;
+  }
+  chooseFolder.addEventListener('click', async () => {
+    try {
+      await pickSaveFolder();
+    } catch (error) {
+      if (error.name !== 'AbortError') folderStatus.textContent = 'Could not open the folder picker.';
+    }
+  });
+  function exportFolder() {
+    return saveFolder || (canChooseFolder ? pickSaveFolder() : null);
+  }
+  function fileStem(project) {
+    if (!project) return 'rojeshs-music-studio';
+    const name = project.name.replace(/[<>:"/\\|?*\u0000-\u001f]/g, '-').trim().replace(/[. ]+$/, '') || 'project';
+    return `studio-${name}-${project.id}`;
+  }
+  async function saveLocalFile(folder, filename, blob) {
+    if (folder) {
+      const file = await folder.getFileHandle(filename, {create: true});
+      const stream = await file.createWritable();
+      try {
+        await stream.write(blob);
+        await stream.close();
+      } catch (error) {
+        await stream.abort().catch(() => {});
+        throw error;
+      }
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  const nameInput = document.querySelector('#pattern-name');
+  const updatePattern = document.querySelector('#update-pattern');
+  const timeline = document.querySelector('#song-timeline');
+  const voiceLane = document.querySelector('#voice-lane');
+  const voiceTakesList = document.querySelector('#voice-takes');
+  const recordVoice = document.querySelector('#record-voice');
+  const voiceStatus = document.querySelector('#voice-status');
+  const voiceVolumeControl = document.querySelector('#voice-volume');
+  const voiceVolumeValue = document.querySelector('#voice-volume-value');
+  const ruler = document.querySelector('#song-ruler');
+  const songProgress = document.querySelector('#song-progress');
+  let pattern = makePattern(true);
+  let library = [];
+  let arrangement = [];
+  let loadedPatternId = null;
+  let voiceTakes = [];
+  let voicePlacements = [];
+  let voiceVolume = 100;
+  let recorder = null;
+  let recordingBusy = false;
+  const voiceBuffers = new Map();
+  const nextPatternName = () => `Pattern ${library.length + 1}`;
+  let dragSource = null;
+  let dropTarget = null;
+  const storageKey = 'little-cloud-studio-v1';
+  const projectsKey = 'little-cloud-studio-projects';
+  let projects = [];
+  let activeProjectId = null;
+  const clampTempo = value => Math.max(45, Math.min(220, Number(value) || 108));
+  const validPattern = (value, trackList = voices) => Array.isArray(value) && value.length === trackList.length && value.every((row, track) => Array.isArray(row) && row.length === steps && row.every(note => note === null || validNote(note) || (trackList[track].root && Array.isArray(note) && note.length > 0 && note.every(validNote))));
+  const copyPattern = value => value.map(row => row.map(note => Array.isArray(note) ? [...note] : note));
+  function upgradePattern(value) {
+    if (!Array.isArray(value) || value.length !== 6) return value;
+    return [value[0], emptyTrack(), emptyTrack(), ...value.slice(1)];
+  }
+  function upgradeWorkspace(saved) {
+    if (!saved) return saved;
+    return {
+      ...saved,
+      pattern: upgradePattern(saved.pattern),
+      library: Array.isArray(saved.library) ? saved.library.map(entry => entry && {...entry, pattern: upgradePattern(entry.pattern)}) : saved.library,
+      kit: saved.kit || {},
+      extraTracks: saved.extraTracks || [],
+      voiceTakes: saved.voiceTakes || [],
+      voicePlacements: saved.voicePlacements || [],
+      voiceVolume: saved.voiceVolume ?? 100
+    };
+  }
+  function restoreWorkspace(saved) {
+    voices = trackVoices(saved?.extraTracks);
+    pattern = validPattern(saved?.pattern) ? saved.pattern : makePattern(true);
+    tempo.value = clampTempo(saved?.tempo);
+    library = Array.isArray(saved?.library) ? saved.library.filter(entry => typeof entry?.id === 'string' && typeof entry.name === 'string' && validPattern(entry.pattern)) : [];
+    arrangement = Array.isArray(saved?.arrangement) ? saved.arrangement.filter(id => id === null || library.some(entry => entry.id === id)) : [];
+    loadedPatternId = library.some(entry => entry.id === saved?.loadedPatternId) ? saved.loadedPatternId : null;
+    kit = Object.fromEntries(voices.flatMap(voice => {
+      const choice = selectedVoice(voice, saved?.kit || {});
+      return choice === (voice.sound || voice) ? [] : [[voice.id, choice.id]];
+    }));
+    voiceTakes = Array.isArray(saved?.voiceTakes) ? saved.voiceTakes.filter(take =>
+      typeof take?.id === 'string' && typeof take.name === 'string' && Number.isFinite(take.duration) && take.duration > 0 &&
+      typeof take.data === 'string' && /^data:(audio\/[^;,]+|video\/(webm|mp4)|application\/octet-stream)(?:;[^,;]+)*;base64,/i.test(take.data)) : [];
+    voicePlacements = Array.isArray(saved?.voicePlacements) ? saved.voicePlacements.filter(clip =>
+      Number.isFinite(clip?.bar) && clip.bar >= 0 && voiceTakes.some(take => take.id === clip.takeId))
+      .map((clip, index) => ({id: clip.id ?? `voice-clip-${index + 1}`, takeId: clip.takeId, bar: clip.bar})) : [];
+    voiceVolume = Number.isFinite(saved?.voiceVolume) ? Math.round(Math.max(0, Math.min(100, saved.voiceVolume))) : 100;
+    renderVoiceVolume();
+    voiceBuffers.clear();
+  }
+  function workspaceData() {
+    const orderedKit = Object.fromEntries(voices.filter(voice => kit[voice.id]).map(voice => [voice.id, kit[voice.id]]));
+    return {pattern, tempo: clampTempo(tempo.value), library, arrangement, loadedPatternId, kit: orderedKit, extraTracks: voices.slice(defaultVoices.length).map(voice => voice.sound.id), voiceTakes, voicePlacements, voiceVolume};
+  }
+  try {
+    const savedProjects = JSON.parse(localStorage.getItem(projectsKey));
+    if (Array.isArray(savedProjects)) projects = savedProjects
+      .filter(project => typeof project?.id === 'string' && typeof project.name === 'string')
+      .map(project => ({...project, workspace: upgradeWorkspace(project.workspace)}))
+      .filter(project => validPattern(project.workspace?.pattern, trackVoices(project.workspace?.extraTracks)));
+  } catch { /* The studio can still open an unsaved project. */ }
+  try {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('reset') === '1') {
+      localStorage.removeItem(storageKey);
+      url.searchParams.delete('reset');
+      history.replaceState(null, '', url);
+      status.textContent = 'Studio reset';
+    }
+    const saved = upgradeWorkspace(JSON.parse(localStorage.getItem(storageKey)));
+    restoreWorkspace(saved);
+    if (projects.some(project => project.id === saved?.activeProjectId)) activeProjectId = saved.activeProjectId;
+  } catch { /* Playback works when storage is unavailable. */ }
+  function save(message = 'Saved in this browser') {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify({...workspaceData(), activeProjectId}));
+      status.textContent = message;
+      return true;
+    } catch { status.textContent = 'Could not save changes in browser storage'; }
+    return false;
+  }
+  let audio, master, noise, bus, timer, nextStep, nextTime, animation, generation = 0;
+  let playbackMode, songPatterns, nextClip, songEnd;
+  let songVoiceClips = [];
+  let songVoiceGain = null;
+  let nextVoiceClip = 0;
+  let voiceEndTime = 0;
+  let soundingClip = -1;
+  let soundingStep;
+  let queued = [];
+  function createNoise(context) {
+    const buffer = context.createBuffer(1, context.sampleRate, context.sampleRate);
+    const samples = buffer.getChannelData(0);
+    for (let i = 0; i < samples.length; i++) samples[i] = Math.random() * 2 - 1;
+    return buffer;
+  }
+  async function readyAudio() {
+    if (!audio) {
+      const Audio = window.AudioContext || window.webkitAudioContext;
+      if (!Audio) throw new Error('Web Audio unavailable');
+      audio = new Audio();
+      master = audio.createDynamicsCompressor();
+      master.connect(audio.destination);
+      noise = createNoise(audio);
+    }
+    if (audio.state !== 'running') await audio.resume();
+  }
+  function tone(type, frequency, time, duration, volume, destination, endFrequency) {
+    const oscillator = destination.context.createOscillator();
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(frequency, time);
+    if (endFrequency) oscillator.frequency.exponentialRampToValueAtTime(endFrequency, time + duration * .65);
+    envelope(oscillator, time, duration, volume, destination);
+  }
+  function envelope(source, time, duration, volume, destination) {
+    const gain = destination.context.createGain();
+    gain.gain.setValueAtTime(.0001, time);
+    gain.gain.exponentialRampToValueAtTime(volume, time + .006);
+    gain.gain.exponentialRampToValueAtTime(.0001, time + duration);
+    source.connect(gain);
+    gain.connect(destination);
+    source.start(time);
+    source.stop(time + duration);
+  }
+  function sound(voice, note, time, destination, noiseBuffer = noise) {
+    const hz = 440 * 2 ** ((note - 69) / 12);
+    switch (voice.id) {
+      case 'kick': tone('sine', 145, time, .24, .83, destination, 43); break;
+      case '808':
+        tone('sine', 82, time, .6, .73, destination, 43);
+        tone('triangle', 95, time, .08, .13, destination, 45);
+        break;
+      case 'clap': {
+        const context = destination.context;
+        const filter = context.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 1550;
+        filter.Q.value = .85;
+        filter.connect(destination);
+        [[0, .025, .36], [.012, .025, .34], [.025, .15, .43]].forEach(([offset, duration, volume]) => {
+          const burst = context.createBufferSource();
+          burst.buffer = noiseBuffer;
+          envelope(burst, time + offset, duration, volume, filter);
+        });
+        break;
+      }
+      case 'snare':
+      case 'hat': {
+        const snare = voice.id === 'snare';
+        const source = destination.context.createBufferSource();
+        const filter = destination.context.createBiquadFilter();
+        filter.type = 'highpass';
+        filter.frequency.value = snare ? 1150 : 7300;
+        filter.connect(destination);
+        source.buffer = noiseBuffer;
+        envelope(source, time, snare ? .18 : .075, snare ? .48 : .29, filter);
+        if (snare) tone('triangle', 180, time, .12, .25, destination, 110);
+        break;
+      }
+      case 'guitar':
+        tone('triangle', hz, time, .29, .29, destination);
+        tone('sine', hz * 3, time, .13, .11, destination);
+        tone('sine', hz * 4, time, .07, .065, destination);
+        break;
+      case 'piano':
+        tone('sine', hz, time, .65, .35, destination);
+        tone('triangle', hz * 2, time, .23, .12, destination);
+        break;
+      case 'bass':
+        tone('triangle', hz, time, .32, .35, destination);
+        tone('sine', hz, time, .37, .25, destination);
+        break;
+      case 'rimshot':
+        tone('triangle', 1050, time, .055, .38, destination, 530);
+        tone('square', 330, time, .035, .1, destination, 150);
+        break;
+      case 'shaker':
+      case 'tambourine': {
+        const context = destination.context;
+        const filter = context.createBiquadFilter();
+        const tambourine = voice.id === 'tambourine';
+        filter.type = 'bandpass';
+        filter.frequency.value = tambourine ? 6800 : 4200;
+        filter.connect(destination);
+        const burst = context.createBufferSource();
+        burst.buffer = noiseBuffer;
+        envelope(burst, time, tambourine ? .14 : .09, .31, filter);
+        if (tambourine) tone('triangle', 4190, time, .11, .045, destination);
+        break;
+      }
+      case 'electric-piano':
+        tone('sine', hz, time, .65, .29, destination);
+        tone('sine', hz * 2.995, time, .29, .14, destination);
+        break;
+      case 'organ':
+        tone('sine', hz, time, .52, .27, destination);
+        tone('sine', hz * 2, time, .48, .12, destination);
+        tone('sine', hz * 3, time, .42, .07, destination);
+        break;
+      case 'synth-lead':
+        tone('sawtooth', hz, time, .29, .19, destination);
+        tone('triangle', hz * 1.004, time, .33, .17, destination);
+        break;
+      case 'synth-bass':
+        tone('sine', hz, time, .38, .37, destination);
+        tone('square', hz * 2, time, .16, .11, destination);
+        break;
+    }
+  }
+  async function preview(voice, note) {
+    try {
+      await readyAudio();
+      sound(selectedVoice(voice), note, audio.currentTime + .01, master);
+    } catch { status.textContent = 'Audio could not start'; }
+  }
+  const beatRow = document.querySelector('#beats');
+  const rollBeatRow = document.querySelector('#roll-beats');
+  for (let step = 0; step < steps; step++) {
+    const heading = document.createElement('th');
+    heading.scope = 'col';
+    heading.textContent = step + 1;
+    beatRow.append(heading);
+    rollBeatRow.append(heading.cloneNode(true));
+  }
+  const sequencer = document.querySelector('#sequencer');
+  const roll = document.querySelector('#note-roll');
+  const rollScroll = document.querySelector('#roll-scroll');
+  const back = document.querySelector('#back');
+  const rollButtons = [];
+  const instrumentButtons = [];
+  const instrumentDialog = document.querySelector('#instrument-dialog');
+  const instrumentOptions = document.querySelector('#instrument-options');
+  document.querySelector('#close-instruments').addEventListener('click', () => instrumentDialog.close());
+  function openInstruments(voice, sampleNote) {
+    const current = selectedVoice(voice);
+    const original = voice.sound || voice;
+    document.querySelector('#instrument-title').textContent = `Choose a sound for ${voice.name}`;
+    instrumentOptions.replaceChildren();
+    instrumentChoices.filter(choice => Boolean(choice.root) === Boolean(voice.root)).forEach(choice => {
+      const label = choice === original ? `${choice.name} (default)` : choice.name;
+      const button = action(label, label, () => {
+        if (choice === original) delete kit[voice.id];
+        else kit[voice.id] = choice.id;
+        render();
+        save(`${choice.name} selected`);
+        instrumentDialog.close();
+        if (!bus) preview(voice, sampleNote());
+      });
+      button.setAttribute('aria-pressed', choice === current);
+      instrumentOptions.append(button);
+    });
+    instrumentDialog.showModal();
+  }
+  document.querySelector('#add-instrument').addEventListener('click', () => {
+    document.querySelector('#instrument-title').textContent = 'Add instrument';
+    instrumentOptions.replaceChildren(...instrumentChoices.map(choice => action(choice.name, `Add ${choice.name} track`, () => {
+      instrumentDialog.close();
+      addInstrumentTrack(choice);
+    })));
+    instrumentDialog.showModal();
+  });
+  let rollTrack;
+  let rollCells = [];
+  function showRoll(visible) {
+    sequencer.hidden = visible;
+    roll.hidden = !visible;
+    document.querySelector('#sequencer-tip').hidden = visible;
+    if (visible) {
+      const rootRow = rollCells.find(entry => entry.note === voices[rollTrack].root).row;
+      rollScroll.scrollTop = rootRow.getBoundingClientRect().top - rollScroll.getBoundingClientRect().top + rollScroll.scrollTop - rollScroll.clientHeight / 2;
+    }
+    (visible ? back : rollButtons[rollTrack]).focus();
+  }
+  back.addEventListener('click', () => showRoll(false));
+  function createTrackRow(voice, track) {
+    const row = document.querySelector('#tracks').insertRow();
+    row.style.setProperty('--voice', voice.color);
+    const heading = document.createElement('th');
+    heading.scope = 'row';
+    const label = document.createElement('div');
+    label.className = 'track';
+    const audition = document.createElement('button');
+    audition.className = 'audition';
+    audition.textContent = '♪';
+    audition.setAttribute('aria-label', `Preview ${voice.name}`);
+    const instrument = document.createElement('button');
+    instrument.type = 'button';
+    instrument.className = 'instrument-select';
+    instrumentButtons[track] = instrument;
+    label.append(audition, instrument);
+    let pitch;
+    if (voice.root) {
+      pitch = document.createElement('select');
+      pitch.setAttribute('aria-label', `${voice.name} pitch`);
+      for (let note = voice.root - 7; note <= voice.root + 12; note++) pitch.add(new Option(noteName(note), note));
+      pitch.value = voice.root;
+      label.append(pitch);
+    }
+    if (voice.root) {
+      const openRoll = document.createElement('button');
+      openRoll.textContent = 'Roll';
+      openRoll.setAttribute('aria-label', `Open ${voice.name} roll`);
+      openRoll.addEventListener('click', () => editRoll(track));
+      rollButtons[track] = openRoll;
+      label.append(openRoll);
+    }
+    const selectedNote = () => pitch ? Number(pitch.value) : 1;
+    instrument.addEventListener('click', () => openInstruments(voice, selectedNote));
+    audition.addEventListener('click', () => preview(voice, selectedNote()));
+    heading.append(label);
+    row.append(heading);
+    return Array.from({length: steps}, (_, step) => {
+      const button = document.createElement('button');
+      button.className = step % 4 === 0 ? 'step downbeat' : 'step';
+      button.addEventListener('click', () => {
+        const note = pattern[track][step] === null ? selectedNote() : null;
+        pattern[track][step] = note;
+        render();
+        save();
+        if (note !== null && !bus) preview(voice, note);
+      });
+      row.insertCell().append(button);
+      return button;
+    });
+  }
+  let cells = voices.map(createTrackRow);
+  function addInstrumentTrack(choice) {
+    if (playbackMode) stopPlayback();
+    const extraTracks = voices.slice(defaultVoices.length).map(voice => voice.sound.id);
+    voices = trackVoices([...extraTracks, choice.id]);
+    const track = voices.length - 1;
+    pattern.push(emptyTrack());
+    library = library.map(entry => ({...entry, pattern: [...entry.pattern, emptyTrack()]}));
+    cells.push(createTrackRow(voices[track], track));
+    render();
+    renderWorkspace();
+    save(`Added ${choice.name} track`);
+    instrumentButtons[track].focus();
+  }
+  function editRoll(track) {
+    rollTrack = track;
+    const voice = voices[track];
+    document.querySelector('#roll-title').textContent = `${selectedVoice(voice).name} roll`;
+    document.querySelector('#roll-table').style.setProperty('--voice', voice.color);
+    const rows = document.querySelector('#roll-notes');
+    rows.replaceChildren();
+    rollCells = Array.from({length: 37}, (_, index) => createRollRow(rows, track, voice.root + 24 - index));
+    render();
+    highlight(highlighted);
+    showRoll(true);
+  }
+  function createRollRow(rows, track, note) {
+    const voice = voices[track];
+    const name = noteName(note);
+    const row = rows.insertRow();
+    const sharp = name.includes('♯');
+    row.classList.toggle('sharp-row', sharp);
+    const heading = document.createElement('th');
+    heading.scope = 'row';
+    const key = document.createElement('button');
+    key.className = sharp ? 'piano-key sharp' : 'piano-key';
+    key.textContent = name;
+    key.addEventListener('click', () => preview(voice, note));
+    heading.append(key);
+    row.append(heading);
+    const buttons = Array.from({length: steps}, (_, step) => {
+      const button = document.createElement('button');
+      button.className = step % 4 === 0 ? 'step downbeat' : 'step';
+      button.setAttribute('aria-label', `${voice.name} ${name}, step ${step + 1}`);
+      button.addEventListener('click', () => {
+        const chord = asNotes(pattern[track][step]);
+        const removing = chord.includes(note);
+        const updated = removing ? chord.filter(pitch => pitch !== note) : [...chord, note];
+        pattern[track][step] = updated.length ? updated : null;
+        render();
+        save();
+        if (!removing && !bus) preview(voice, note);
+      });
+      row.insertCell().append(button);
+      return button;
+    });
+    return {note, row, buttons};
+  }
+  function render() {
+    instrumentButtons.forEach((button, track) => {
+      const name = selectedVoice(voices[track]).name;
+      button.textContent = name;
+      button.title = `${name} · Choose instrument`;
+      button.setAttribute('aria-label', `Change ${name} instrument`);
+    });
+    cells.forEach((row, track) => row.forEach((button, step) => {
+      const note = pattern[track][step];
+      const active = note !== null;
+      const chord = asNotes(note);
+      const pitch = active && voices[track].root ? chord.map(noteName).join(', ') : '';
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-pressed', active);
+      button.setAttribute('aria-label', `${selectedVoice(voices[track]).name}, step ${step + 1}${pitch ? `, ${pitch}` : ''}`);
+      button.textContent = chord.length > 1 ? `${chord.length}♪` : pitch || (active ? '●' : '');
+    }));
+    rollCells.forEach(({note, buttons}) => buttons.forEach((button, step) => {
+      const active = asNotes(pattern[rollTrack][step]).includes(note);
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-pressed', active);
+    }));
+  }
+  let highlighted = -1;
+  function highlight(step) {
+    for (const row of [beatRow, rollBeatRow]) {
+      row.children[highlighted + 1]?.classList.remove('current');
+      if (step >= 0) row.children[step + 1].classList.add('current');
+    }
+    for (const buttons of [...cells, ...rollCells.map(entry => entry.buttons)]) {
+      buttons[highlighted]?.classList.remove('current');
+      buttons[step]?.classList.add('current');
+    }
+    highlighted = step;
+  }
+  function schedule() {
+    if (songEnd !== null) return;
+    const now = audio.currentTime;
+    const duration = 60 / clampTempo(tempo.value) / 4;
+    while (nextTime < now + .1) {
+      const playingPattern = playbackMode === 'song' ? songPatterns[nextClip] : pattern;
+      if (playbackMode === 'song') scheduleVoiceClips(now, duration);
+      if (nextTime >= now) {
+        playStep(playingPattern, nextStep, nextTime, bus, noise);
+      }
+      queued.push({step: nextStep, time: nextTime, clip: nextClip, duration});
+      nextStep = (nextStep + 1) % steps;
+      nextTime += duration;
+      if (playbackMode === 'song' && nextStep === 0 && ++nextClip === songPatterns.length) {
+        songEnd = Math.max(nextTime, voiceEndTime);
+        return;
+      }
+    }
+  }
+  function scheduleVoiceClips(now, stepDuration) {
+    const step = nextClip * steps + nextStep;
+    while (nextVoiceClip < songVoiceClips.length) {
+      const [bar, buffer] = songVoiceClips[nextVoiceClip];
+      const clipStep = bar * steps;
+      if (clipStep >= step + 1) break;
+      nextVoiceClip++;
+      const time = nextTime + (clipStep - step) * stepDuration;
+      if (time + buffer.duration <= now) continue;
+      startVoiceClip(buffer, songVoiceGain, Math.max(time, now), Math.max(0, now - time));
+      voiceEndTime = Math.max(voiceEndTime, time + buffer.duration);
+    }
+  }
+  function playStep(bar, step, time, destination, noiseBuffer, selection = kit, trackList = voices) {
+    trackList.forEach((voice, track) => {
+      asNotes(bar[track][step]).forEach(note => sound(selectedVoice(voice, selection), note, time, destination, noiseBuffer));
+    });
+  }
+  function voiceLengthInBars(take) {
+    return take.duration * clampTempo(tempo.value) / 240;
+  }
+  function songBarCount() {
+    return voicePlacements.reduce((count, clip) => {
+      const take = voiceTakes.find(item => item.id === clip.takeId);
+      return take ? Math.max(count, Math.ceil(clip.bar + voiceLengthInBars(take))) : count;
+    }, arrangement.length);
+  }
+  function arrangedPatterns() {
+    const silentBar = makePattern(false);
+    return Array.from({length: songBarCount()}, (_, index) => library.find(entry => entry.id === arrangement[index])?.pattern ?? silentBar);
+  }
+  async function decodeTake(data) {
+    const OfflineAudio = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    const bytes = await (await fetch(data)).arrayBuffer();
+    return new OfflineAudio(1, 1, 44100).decodeAudioData(bytes);
+  }
+  function getVoiceBuffer(take) {
+    if (!voiceBuffers.has(take.data)) {
+      voiceBuffers.set(take.data, decodeTake(take.data).catch(error => {
+        voiceBuffers.delete(take.data);
+        throw error;
+      }));
+    }
+    return voiceBuffers.get(take.data);
+  }
+  async function preparedVoiceClips() {
+    return Promise.all([...voicePlacements].sort((a, b) => a.bar - b.bar).map(async clip => {
+      const take = voiceTakes.find(item => item.id === clip.takeId);
+      return [clip.bar, await getVoiceBuffer(take)];
+    }));
+  }
+  function startVoiceClip(buffer, destination, time, offset = 0) {
+    const source = destination.context.createBufferSource();
+    source.buffer = buffer;
+    source.connect(destination);
+    source.start(time, offset);
+    return source;
+  }
+  function createVoiceGain(destination, level) {
+    const gain = destination.context.createGain();
+    gain.gain.value = level / 100;
+    gain.connect(destination);
+    return gain;
+  }
+  function renderVoiceVolume() {
+    voiceVolumeControl.value = voiceVolume;
+    voiceVolumeValue.textContent = `${voiceVolume}%`;
+  }
+  voiceVolumeControl.addEventListener('input', () => {
+    voiceVolume = Number(voiceVolumeControl.value);
+    renderVoiceVolume();
+    if (songVoiceGain) songVoiceGain.gain.setTargetAtTime(voiceVolume / 100, audio.currentTime, .015);
+  });
+  voiceVolumeControl.addEventListener('change', () => save());
+  function showSoundingClip(clip) {
+    soundingClip = clip;
+    timeline.querySelectorAll('[data-bar]').forEach((item, index) => {
+      item.classList.toggle('sounding', index === clip);
+      if (index === clip) item.setAttribute('aria-current', 'true');
+      else item.removeAttribute('aria-current');
+    });
+  }
+  function drawPlayhead() {
+    if (songEnd !== null && audio.currentTime >= songEnd) {
+      stopPlayback(true);
+      return;
+    }
+    let current;
+    while (queued.length && queued[0].time <= audio.currentTime) current = queued.shift();
+    if (current && playbackMode === 'loop') highlight(current.step);
+    if (playbackMode === 'song') {
+      if (current) {
+        soundingStep = current;
+        if (current.clip !== soundingClip) showSoundingClip(current.clip);
+      }
+      if (soundingStep) {
+        const {clip, step, time, duration} = soundingStep;
+        const fraction = Math.min(1, Math.max(0, (audio.currentTime - time) / duration));
+        const barProgress = (step + fraction) / steps;
+        songProgress.style.width = `calc((var(--bar-width) + var(--bar-gap)) * ${clip} + var(--bar-width) * ${barProgress})`;
+        songProgress.hidden = false;
+      }
+    }
+    animation = requestAnimationFrame(drawPlayhead);
+  }
+  function stopPlayback(letNotesRing = false) {
+    generation++;
+    if (bus) {
+      clearInterval(timer);
+      cancelAnimationFrame(animation);
+      const endingBus = bus;
+      if (letNotesRing) setTimeout(() => endingBus.disconnect(), 650);
+      else endingBus.disconnect();
+      bus = null;
+    }
+    playbackMode = null;
+    songVoiceGain = null;
+    queued = [];
+    soundingStep = null;
+    songProgress.hidden = true;
+    songProgress.style.width = '0';
+    highlight(-1);
+    showSoundingClip(-1);
+    updateTransport();
+  }
+  function updateTransport() {
+    play.textContent = playbackMode === 'loop' ? '■ Stop' : '▶ Play';
+    play.setAttribute('aria-pressed', playbackMode === 'loop');
+    playSong.textContent = playbackMode === 'song' ? '■ Stop song' : '▶ Play song';
+    playSong.setAttribute('aria-pressed', playbackMode === 'song');
+    const emptySong = arrangement.length === 0 && voicePlacements.length === 0;
+    playSong.disabled = emptySong;
+    downloadSong.disabled = exportingSong || emptySong;
+  }
+  async function startPlayback(mode) {
+    const wasPlaying = playbackMode === mode;
+    stopPlayback();
+    if (wasPlaying || (mode === 'song' && playSong.disabled)) return;
+    const request = generation;
+    playbackMode = mode;
+    updateTransport();
+    try {
+      await readyAudio();
+      const voiceClips = mode === 'song' ? await preparedVoiceClips() : [];
+      if (request !== generation) return;
+      songPatterns = mode === 'song' ? arrangedPatterns() : [];
+      songVoiceClips = voiceClips;
+      nextVoiceClip = 0;
+      voiceEndTime = 0;
+      nextClip = 0;
+      songEnd = null;
+      bus = audio.createGain();
+      bus.connect(master);
+      if (mode === 'song') songVoiceGain = createVoiceGain(bus, voiceVolume);
+      nextStep = 0;
+      nextTime = audio.currentTime + .035;
+      schedule();
+      timer = setInterval(schedule, 25);
+      drawPlayhead();
+    } catch {
+      if (request !== generation) return;
+      stopPlayback();
+      status.textContent = 'Audio could not start';
+    }
+  }
+  play.addEventListener('click', () => startPlayback('loop'));
+  playSong.addEventListener('click', () => startPlayback('song'));
+  function encodeWav(buffer) {
+    const samples = buffer.getChannelData(0);
+    const bytes = new DataView(new ArrayBuffer(44 + samples.length * 2));
+    function writeTag(offset, tag) {
+      for (let i = 0; i < tag.length; i++) bytes.setUint8(offset + i, tag.charCodeAt(i));
+    }
+    writeTag(0, 'RIFF');
+    bytes.setUint32(4, bytes.byteLength - 8, true);
+    writeTag(8, 'WAVE');
+    writeTag(12, 'fmt ');
+    bytes.setUint32(16, 16, true);
+    bytes.setUint16(20, 1, true);
+    bytes.setUint16(22, 1, true);
+    bytes.setUint32(24, buffer.sampleRate, true);
+    bytes.setUint32(28, buffer.sampleRate * 2, true);
+    bytes.setUint16(32, 2, true);
+    bytes.setUint16(34, 16, true);
+    writeTag(36, 'data');
+    bytes.setUint32(40, samples.length * 2, true);
+    for (let i = 0; i < samples.length; i++) {
+      const sample = Math.max(-1, Math.min(1, samples[i]));
+      bytes.setInt16(44 + i * 2, Math.round(sample * (sample < 0 ? 32768 : 32767)), true);
+    }
+    return new Blob([bytes], {type: 'audio/wav'});
+  }
+  async function exportSong() {
+    exportingSong = true;
+    updateTransport();
+    downloadStatus.textContent = 'Rendering song…';
+    try {
+      const OfflineAudio = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      const bars = arrangedPatterns();
+      const exportKit = {...kit};
+      const exportTracks = voices;
+      const exportVoiceVolume = voiceVolume;
+      const stepDuration = 60 / clampTempo(tempo.value) / 4;
+      const filename = `${fileStem(currentProject())}-song.wav`;
+      const [folder, clips] = await Promise.all([exportFolder(), preparedVoiceClips()]);
+      const sampleRate = 44100;
+      const end = [...clips].reduce((duration, [bar, buffer]) => Math.max(duration, bar * steps * stepDuration + buffer.duration), bars.length * steps * stepDuration);
+      const frames = Math.ceil((end + .65) * sampleRate);
+      const offline = new OfflineAudio(1, frames, sampleRate);
+      const output = offline.createDynamicsCompressor();
+      output.connect(offline.destination);
+      const offlineNoise = createNoise(offline);
+      bars.forEach((bar, index) => {
+        for (let step = 0; step < steps; step++) {
+          playStep(bar, step, (index * steps + step) * stepDuration, output, offlineNoise, exportKit, exportTracks);
+        }
+      });
+      const offlineVoiceGain = createVoiceGain(output, exportVoiceVolume);
+      for (const [bar, buffer] of clips) startVoiceClip(buffer, offlineVoiceGain, bar * steps * stepDuration);
+      await saveLocalFile(folder, filename, encodeWav(await offline.startRendering()));
+      downloadStatus.textContent = folder ? `WAV saved to ${folder.name}.` : 'WAV download started.';
+    } catch (error) {
+      downloadStatus.textContent = error.name === 'AbortError' ? 'WAV export canceled.' : 'Could not export the song. Check the save folder and try again.';
+    } finally {
+      exportingSong = false;
+      updateTransport();
+    }
+  }
+  downloadSong.addEventListener('click', exportSong);
+  tempo.addEventListener('change', () => {
+    tempo.value = clampTempo(tempo.value);
+    renderWorkspace();
+    save();
+  });
+  document.querySelector('#demo').addEventListener('click', () => {
+    pattern = makePattern(true);
+    render();
+    save('Demo loaded');
+  });
+  document.querySelector('#clear').addEventListener('click', () => {
+    pattern = makePattern(false);
+    render();
+    save('Pattern cleared');
+  });
+  document.querySelector('#new-pattern').addEventListener('click', () => {
+    loadedPatternId = null;
+    pattern = makePattern(false);
+    nameInput.value = '';
+    if (!roll.hidden) showRoll(false);
+    render();
+    renderWorkspace();
+    save('New pattern ready');
+    nameInput.focus();
+  });
+  function action(label, accessibleName, handler, disabled = false) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = label;
+    button.setAttribute('aria-label', accessibleName);
+    button.disabled = disabled;
+    button.addEventListener('click', handler);
+    return button;
+  }
+  function loadPattern(entry) {
+    loadedPatternId = entry.id;
+    pattern = copyPattern(entry.pattern);
+    nameInput.value = entry.name;
+    if (!roll.hidden) showRoll(false);
+    render();
+    renderWorkspace();
+    save(`Loaded ${entry.name}`);
+    nameInput.focus();
+  }
+  function loadOnDoubleClick(box, entry) {
+    box.title = `Double-click to edit ${entry.name}`;
+    box.addEventListener('dblclick', event => {
+      if (!event.target.closest('button')) loadPattern(entry);
+    });
+  }
+  function createPatternPreview(entry) {
+    const preview = document.createElement('div');
+    preview.className = 'pattern-preview';
+    preview.setAttribute('aria-hidden', 'true');
+    entry.pattern.forEach((row, track) => {
+      row.forEach(note => {
+        const pad = document.createElement('span');
+        if (note !== null) {
+          pad.className = 'on';
+          pad.style.setProperty('--pad-color', voices[track].color);
+        }
+        preview.append(pad);
+      });
+    });
+    return preview;
+  }
+  function applyPatternColor(element, entry) {
+    const hue = (265 + library.indexOf(entry) * 137.508) % 360;
+    element.style.setProperty('--pattern-color', `hsl(${hue} 78% 72%)`);
+  }
+  function createEmptyBar(index, placeholder = false) {
+    const slot = document.createElement('li');
+    slot.className = 'song-slot';
+    slot.dataset.bar = index;
+    const position = document.createElement('small');
+    position.textContent = `Bar ${index + 1}`;
+    const label = document.createElement('span');
+    label.textContent = placeholder ? 'Drop pattern here' : 'Empty bar';
+    slot.append(position, label);
+    if (!placeholder) slot.append(action('Remove', `Remove empty bar ${index + 1}`, () => removeBar(index)));
+    return slot;
+  }
+  function removeBar(index) {
+    editArrangement(() => arrangement.splice(index, 1), `Removed bar ${index + 1}`);
+    const remaining = timeline.children[Math.min(index, arrangement.length - 1)];
+    (remaining?.querySelector('button:last-child') || document.querySelector('#add-empty-bar')).focus();
+  }
+  function renderWorkspace() {
+    const list = document.querySelector('#pattern-list');
+    const barCount = songBarCount();
+    nameInput.placeholder = nextPatternName();
+    list.replaceChildren();
+    timeline.replaceChildren();
+    ruler.replaceChildren(songProgress);
+    for (let bar = 0; bar <= barCount; bar++) {
+      const marker = document.createElement('div');
+      marker.className = 'ruler-bar';
+      for (let beat = 1; beat <= 4; beat++) {
+        const tick = document.createElement('span');
+        tick.textContent = `${bar + 1}.${beat}`;
+        marker.append(tick);
+      }
+      ruler.append(marker);
+    }
+    document.querySelector('#empty-library').hidden = library.length > 0;
+    updatePattern.disabled = loadedPatternId === null;
+    document.querySelector('#song-details').textContent = barCount
+      ? `${barCount} ${barCount === 1 ? 'bar' : 'bars'} · Plays left to right at the studio tempo`
+      : 'Drop a pattern or voice take into the first bar to start your song.';
+    for (const entry of library) {
+      const card = document.createElement('li');
+      card.className = 'pattern-card';
+      applyPatternColor(card, entry);
+      card.classList.toggle('selected', entry.id === loadedPatternId);
+      enableDrag(card, {id: entry.id});
+      loadOnDoubleClick(card, entry);
+      const name = document.createElement('strong');
+      name.textContent = entry.name;
+      const controls = document.createElement('div');
+      controls.className = 'pattern-actions';
+      controls.append(
+        action(entry.id === loadedPatternId ? 'Reload' : 'Load', `Load ${entry.name} into the sequencer`, () => loadPattern(entry)),
+        action('Add to song', `Add ${entry.name} to song`, () => {
+          editArrangement(() => arrangement.push(entry.id), `Added ${entry.name} to song`);
+          list.children[library.indexOf(entry)]?.querySelector('button:last-child')?.focus();
+        })
+      );
+      card.append(name, createPatternPreview(entry), controls);
+      list.append(card);
+    }
+    arrangement.forEach((id, index) => {
+      if (id === null) {
+        timeline.append(createEmptyBar(index));
+        return;
+      }
+      const entry = library.find(item => item.id === id);
+      const clip = document.createElement('li');
+      clip.className = 'song-clip';
+      applyPatternColor(clip, entry);
+      clip.dataset.bar = index;
+      clip.setAttribute('aria-label', `Bar ${index + 1}, ${entry.name}`);
+      enableDrag(clip, {index, name: entry.name});
+      loadOnDoubleClick(clip, entry);
+      const name = document.createElement('strong');
+      name.className = 'clip-name';
+      name.textContent = entry.name;
+      const remove = action('×', `Remove ${entry.name} from bar ${index + 1}`, () => {
+        editArrangement(() => { arrangement[index] = null; }, `Cleared bar ${index + 1}`);
+        timeline.children[index].querySelector('button').focus();
+      });
+      remove.className = 'remove-clip';
+      clip.append(name, createPatternPreview(entry), remove);
+      timeline.append(clip);
+    });
+    for (let bar = arrangement.length; bar <= barCount; bar++) timeline.append(createEmptyBar(bar, true));
+    renderVoiceLane(barCount);
+    showSoundingClip(soundingClip);
+    updateTransport();
+  }
+  function enableDrag(element, source) {
+    element.draggable = true;
+    element.addEventListener('dragstart', event => {
+      if (event.target !== element) return;
+      dragSource = {...source, element};
+      if (source.voiceClipId) dragSource.grabOffset = event.clientX - element.getBoundingClientRect().left;
+      event.dataTransfer.setData('text/plain', source.name ?? element.querySelector('strong').textContent);
+      event.dataTransfer.effectAllowed = source.id || (source.takeId && !source.voiceClipId) ? 'copy' : 'move';
+      element.classList.add('dragging');
+    });
+    element.addEventListener('dragend', clearDrag);
+  }
+  function markDropTarget(target) {
+    dropTarget?.classList.remove('drop-target');
+    dropTarget = target;
+    dropTarget?.classList.add('drop-target');
+  }
+  function clearDrag() {
+    dragSource?.element.classList.remove('dragging');
+    dragSource = null;
+    markDropTarget(null);
+  }
+  function voiceWave(take) {
+    const wave = document.createElement('div');
+    wave.className = 'voice-wave';
+    wave.setAttribute('aria-hidden', 'true');
+    for (const peak of (Array.isArray(take.peaks) ? take.peaks.slice(0, 28) : [])) {
+      const mark = document.createElement('span');
+      mark.style.height = `${Math.max(8, Math.min(100, Number(peak) || 0))}%`;
+      wave.append(mark);
+    }
+    return wave;
+  }
+  function renderVoiceLane(barCount) {
+    voiceLane.replaceChildren();
+    voiceLane.toggleAttribute('data-empty', voicePlacements.length === 0);
+    voiceLane.dataset.bars = barCount + 1;
+    voiceLane.style.setProperty('--lane-bars', barCount + 1);
+    const rowEnds = [];
+    const barWidth = voiceLane.getBoundingClientRect().width / Number(voiceLane.dataset.bars);
+    for (const placement of [...voicePlacements].sort((a, b) => a.bar - b.bar)) {
+      const take = voiceTakes.find(item => item.id === placement.takeId);
+      const clip = document.createElement('li');
+      clip.className = 'voice-clip';
+      const length = voiceLengthInBars(take);
+      let row = rowEnds.findIndex(end => end <= placement.bar);
+      if (row === -1) row = rowEnds.length;
+      rowEnds[row] = placement.bar + Math.max(length, barWidth > 0 ? 44 / barWidth : 0);
+      clip.style.setProperty('--clip-start', placement.bar);
+      clip.style.setProperty('--clip-bars', length);
+      clip.style.setProperty('--voice-row', row);
+      clip.title = `${take.name} · ${take.duration.toFixed(1)}s`;
+      enableDrag(clip, {takeId: take.id, voiceClipId: placement.id, name: take.name});
+      const header = document.createElement('div');
+      header.className = 'voice-clip-header';
+      const name = document.createElement('span');
+      name.textContent = take.name;
+      header.append(name, action('×', `Remove ${take.name} clip`, () => {
+        editArrangement(() => { voicePlacements = voicePlacements.filter(item => item.id !== placement.id); }, 'Removed voice clip');
+        recordVoice.focus();
+      }));
+      clip.append(header, voiceWave(take));
+      voiceLane.append(clip);
+    }
+    voiceLane.style.setProperty('--voice-rows', Math.max(1, rowEnds.length));
+    voiceTakesList.replaceChildren();
+    for (const take of voiceTakes) {
+      const card = document.createElement('li');
+      card.className = 'voice-take';
+      enableDrag(card, {takeId: take.id, name: take.name});
+      const label = document.createElement('strong');
+      label.textContent = `${take.name} · ${take.duration.toFixed(1)}s`;
+      const controls = document.createElement('div');
+      controls.className = 'clip-actions';
+      controls.append(
+        action('Preview', `Preview ${take.name}`, async () => {
+          try {
+            await readyAudio();
+            const buffer = await getVoiceBuffer(take);
+            startVoiceClip(buffer, master, audio.currentTime);
+          } catch { voiceStatus.textContent = 'Could not play this take.'; }
+        }),
+        action('Add to song', `Add ${take.name} to song`, () => {
+          let bar = 0;
+          while (voicePlacements.some(clip => Math.floor(clip.bar) === bar)) bar++;
+          placeVoice(take.id, bar);
+          voiceTakesList.children[voiceTakes.indexOf(take)]?.querySelector('button:nth-child(2)')?.focus();
+        })
+      );
+      card.append(label, voiceWave(take), controls);
+      voiceTakesList.append(card);
+    }
+  }
+  function placeVoice(takeId, bar, clipId) {
+    editArrangement(() => {
+      voicePlacements = [...voicePlacements.filter(clip => clip.id !== clipId), {id: clipId ?? crypto.randomUUID(), takeId, bar}];
+    }, 'Placed voice clip');
+  }
+  function voiceDropPosition(event) {
+    const bounds = voiceLane.getBoundingClientRect();
+    const bars = Number(voiceLane.dataset.bars);
+    const offset = event.clientX - bounds.left - (dragSource?.grabOffset || 0);
+    return Math.max(0, Math.min(bars, offset / bounds.width * bars));
+  }
+  voiceLane.addEventListener('dragover', event => {
+    if (!dragSource?.takeId) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = dragSource.voiceClipId ? 'move' : 'copy';
+    voiceLane.style.setProperty('--drop-bar', voiceDropPosition(event));
+    if (dropTarget !== voiceLane) markDropTarget(voiceLane);
+  });
+  voiceLane.addEventListener('dragleave', event => {
+    if (dropTarget && !dropTarget.contains(event.relatedTarget)) markDropTarget(null);
+  });
+  voiceLane.addEventListener('drop', event => {
+    if (!dragSource?.takeId) return;
+    event.preventDefault();
+    const {takeId, voiceClipId} = dragSource;
+    const bar = voiceDropPosition(event);
+    clearDrag();
+    placeVoice(takeId, bar, voiceClipId);
+  });
+  function recordingData(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+  }
+  function waveformPeaks(buffer) {
+    const samples = buffer.getChannelData(0);
+    return Array.from({length: 28}, (_, index) => {
+      const start = Math.floor(samples.length * index / 28);
+      const end = Math.floor(samples.length * (index + 1) / 28);
+      let peak = 0;
+      for (let i = start; i < end; i++) peak = Math.max(peak, Math.abs(samples[i]));
+      return Math.round(peak * 100);
+    });
+  }
+  function recordButtonState() {
+    const active = recorder?.state === 'recording';
+    recordVoice.disabled = recordingBusy;
+    recordVoice.setAttribute('aria-pressed', Boolean(active));
+    recordVoice.textContent = active ? '■ Stop recording' : '● Start recording';
+  }
+  recordVoice.addEventListener('click', async () => {
+    if (recordingBusy) return;
+    if (recorder?.state === 'recording') {
+      recordingBusy = true;
+      recorder.stop();
+      voiceStatus.textContent = 'Preparing recording…';
+      recordButtonState();
+      return;
+    }
+    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+      voiceStatus.textContent = 'Microphone recording requires a supported browser on localhost or HTTPS.';
+      return;
+    }
+    recordingBusy = true;
+    recordButtonState();
+    voiceStatus.textContent = 'Waiting for microphone access…';
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({audio: true});
+      const capture = new MediaRecorder(stream, {audioBitsPerSecond: 64000});
+      const chunks = [];
+      let captureFailed = false;
+      capture.addEventListener('dataavailable', event => { if (event.data.size) chunks.push(event.data); });
+      capture.addEventListener('error', () => { captureFailed = true; });
+      capture.addEventListener('stop', async () => {
+        stream.getTracks().forEach(track => track.stop());
+        recordingBusy = true;
+        recordButtonState();
+        try {
+          if (captureFailed || !chunks.length) throw new Error('No recording');
+          const data = await recordingData(new Blob(chunks, {type: chunks[0].type || capture.mimeType}));
+          const buffer = await decodeTake(data);
+          const take = {id: crypto.randomUUID(), name: `Voice ${voiceTakes.length + 1}`, data, duration: buffer.duration, peaks: waveformPeaks(buffer)};
+          voiceTakes.push(take);
+          voiceBuffers.set(data, Promise.resolve(buffer));
+          renderWorkspace();
+          voiceStatus.textContent = save(`Recorded ${take.name}`) ? `${take.name} ready. Drag it into the voice lane.` : `${take.name} ready. Save the project to a file to keep this recording.`;
+        } catch { voiceStatus.textContent = 'Could not save this recording.'; }
+        finally {
+          recorder = null;
+          recordingBusy = false;
+          recordButtonState();
+        }
+      }, {once: true});
+      capture.start();
+      recorder = capture;
+      voiceStatus.textContent = 'Recording microphone…';
+    } catch {
+      stream?.getTracks().forEach(track => track.stop());
+      voiceStatus.textContent = 'Could not start recording. Check microphone access and try again.';
+    } finally {
+      recordingBusy = false;
+      recordButtonState();
+    }
+  });
+  timeline.addEventListener('dragover', event => {
+    const target = event.target.closest('[data-bar]');
+    if (!dragSource || dragSource.takeId || !target) return;
+    event.preventDefault();
+    const bar = Number(target.dataset.bar);
+    const allowed = dragSource.id || arrangement[bar] == null;
+    event.dataTransfer.dropEffect = allowed ? (dragSource.id ? 'copy' : 'move') : 'none';
+    const highlightTarget = allowed ? target : null;
+    if (dropTarget !== highlightTarget) markDropTarget(highlightTarget);
+  });
+  timeline.addEventListener('dragleave', event => {
+    if (dropTarget && !dropTarget.contains(event.relatedTarget)) markDropTarget(null);
+  });
+  timeline.addEventListener('drop', event => {
+    const target = event.target.closest('[data-bar]');
+    if (!dragSource || dragSource.takeId || !target) return;
+    event.preventDefault();
+    const {id, index} = dragSource;
+    const targetBar = Number(target.dataset.bar);
+    clearDrag();
+    if (id) {
+      editArrangement(() => {
+        while (arrangement.length < targetBar) arrangement.push(null);
+        arrangement.splice(targetBar, arrangement[targetBar] === null ? 1 : 0, id);
+      }, `Added pattern at bar ${targetBar + 1}`);
+      return;
+    }
+    if (arrangement[targetBar] != null) return;
+    editArrangement(() => {
+      while (arrangement.length < targetBar) arrangement.push(null);
+      arrangement[targetBar] = arrangement[index];
+      arrangement[index] = null;
+    }, `Moved pattern to bar ${targetBar + 1}`);
+  });
+  document.addEventListener('dragover', event => {
+    if (dragSource?.index === undefined || event.target.closest('#song-timeline [data-bar]')) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    if (dropTarget) markDropTarget(null);
+  });
+  document.addEventListener('drop', event => {
+    if (dragSource?.index === undefined || event.target.closest('#song-timeline [data-bar]')) return;
+    event.preventDefault();
+    const {index} = dragSource;
+    clearDrag();
+    editArrangement(() => { arrangement[index] = null; }, `Cleared bar ${index + 1}`);
+  });
+  document.querySelector('#add-empty-bar').addEventListener('click', () => {
+    editArrangement(() => arrangement.push(null), 'Added empty bar');
+  });
+  function editArrangement(edit, message) {
+    if (playbackMode === 'song') stopPlayback();
+    edit();
+    renderWorkspace();
+    save(message);
+  }
+  document.querySelector('#pattern-form').addEventListener('submit', event => {
+    event.preventDefault();
+    const name = nameInput.value.trim() || nextPatternName();
+    const id = `pattern-${library.length + 1}`;
+    library.push({id, name, pattern: copyPattern(pattern)});
+    loadedPatternId = id;
+    nameInput.value = '';
+    renderWorkspace();
+    save(`Saved ${name}`);
+  });
+  updatePattern.addEventListener('click', () => {
+    const entry = library.find(item => item.id === loadedPatternId);
+    if (playbackMode === 'song') stopPlayback();
+    entry.name = nameInput.value.trim() || entry.name;
+    entry.pattern = copyPattern(pattern);
+    nameInput.value = entry.name;
+    renderWorkspace();
+    save(`Updated ${entry.name}`);
+  });
+  const projectsDrawer = document.querySelector('#projects-drawer');
+  const projectName = document.querySelector('#project-name');
+  const projectStatus = document.querySelector('#project-status');
+  const saveProjectButton = document.querySelector('#save-project');
+  const currentProject = () => projects.find(project => project.id === activeProjectId);
+  function renderProjects() {
+    const list = document.querySelector('#project-list');
+    list.replaceChildren();
+    document.querySelector('#empty-projects').hidden = projects.length > 0;
+    for (const project of projects) {
+      const item = document.createElement('li');
+      const button = action(project.name, `Open ${project.name}`, () => {
+        if (project.id !== activeProjectId && !switchProject(project)) return;
+        projectsDrawer.close();
+      });
+      if (project.id === activeProjectId) button.setAttribute('aria-current', 'true');
+      item.append(button);
+      list.append(item);
+    }
+  }
+  function hasUnsavedProject() {
+    const saved = currentProject();
+    if (saved) {
+      const {loadedPatternId: currentSelection, ...current} = workspaceData();
+      const {loadedPatternId: savedSelection, ...previous} = saved.workspace;
+      return JSON.stringify(current) !== JSON.stringify(previous);
+    }
+    return library.length > 0 || arrangement.length > 0 || voiceTakes.length > 0 || voiceVolume !== 100 || voices.length > defaultVoices.length || Object.keys(kit).length > 0 || clampTempo(tempo.value) !== 108 ||
+      (JSON.stringify(pattern) !== JSON.stringify(makePattern(false)) && JSON.stringify(pattern) !== JSON.stringify(makePattern(true)));
+  }
+  function switchProject(project) {
+    if (recordingBusy || recorder) {
+      projectStatus.textContent = 'Finish recording before switching projects.';
+      return false;
+    }
+    if (saveProjectButton.disabled) {
+      projectStatus.textContent = 'Wait for the current project save to finish.';
+      return false;
+    }
+    if (hasUnsavedProject() && !window.confirm('Switch projects without saving your current changes?')) return false;
+    stopPlayback();
+    if (!roll.hidden) showRoll(false);
+    rollCells = [];
+    document.querySelector('#tracks').replaceChildren();
+    rollButtons.length = 0;
+    instrumentButtons.length = 0;
+    activeProjectId = project?.id ?? null;
+    restoreWorkspace(project ? structuredClone(project.workspace) : {pattern: makePattern(false, defaultVoices)});
+    cells = voices.map(createTrackRow);
+    nameInput.value = library.find(entry => entry.id === loadedPatternId)?.name || '';
+    projectName.value = project?.name ?? '';
+    downloadStatus.textContent = '';
+    voiceStatus.textContent = '';
+    render();
+    renderWorkspace();
+    renderProjects();
+    save(project ? `Opened ${project.name}` : 'New project');
+    projectStatus.textContent = project ? `Opened ${project.name}` : 'New project ready.';
+    return true;
+  }
+  document.querySelector('#open-projects').addEventListener('click', () => projectsDrawer.showModal());
+  document.querySelector('#close-projects').addEventListener('click', () => projectsDrawer.close());
+  document.querySelector('#new-project').addEventListener('click', () => {
+    if (switchProject(null)) projectName.focus();
+  });
+  function readProjectFile(contents) {
+    const file = JSON.parse(contents);
+    const workspace = upgradeWorkspace(file?.workspace);
+    const tracks = trackVoices(workspace?.extraTracks);
+    if (file?.version !== 1 || typeof file.name !== 'string' || !file.name.trim() || !validPattern(workspace?.pattern, tracks) ||
+        !Array.isArray(workspace.library) || !Array.isArray(workspace.arrangement) ||
+        !workspace.library.every(entry => typeof entry?.id === 'string' && typeof entry.name === 'string' && validPattern(entry.pattern, tracks))) {
+      throw new Error('Invalid studio project');
+    }
+    const patternIds = new Set(workspace.library.map(entry => entry.id));
+    if (patternIds.size !== workspace.library.length || !workspace.arrangement.every(id => id === null || patternIds.has(id))) {
+      throw new Error('Invalid pattern references');
+    }
+    return {id: `project-${projects.length + 1}`, name: file.name.trim().slice(0, 60), workspace};
+  }
+  const projectFile = document.querySelector('#project-file');
+  const openProjectFile = document.querySelector('#open-project-file');
+  openProjectFile.addEventListener('click', () => projectFile.click());
+  projectFile.addEventListener('change', async () => {
+    const file = projectFile.files[0];
+    projectFile.value = '';
+    if (!file) return;
+    openProjectFile.disabled = true;
+    try {
+      const project = readProjectFile(await file.text());
+      projects.push(project);
+      if (!switchProject(project)) {
+        projects.pop();
+        return;
+      }
+      try {
+        localStorage.setItem(projectsKey, JSON.stringify(projects));
+      } catch {
+        projectStatus.textContent = `Opened ${project.name}. The browser could not save a copy for the sidebar.`;
+      }
+    } catch {
+      projectStatus.textContent = 'Could not open that file. Choose a project JSON saved by this studio.';
+    } finally {
+      openProjectFile.disabled = false;
+    }
+  });
+  document.querySelector('#project-form').addEventListener('submit', async event => {
+    event.preventDefault();
+    if (saveProjectButton.disabled) return;
+    const existing = currentProject();
+    const name = projectName.value.trim() || existing?.name || `Project ${projects.length + 1}`;
+    const project = {id: existing?.id ?? `project-${projects.length + 1}`, name, workspace: structuredClone(workspaceData())};
+    const updated = existing ? projects.map(item => item.id === existing.id ? project : item) : [...projects, project];
+    saveProjectButton.disabled = true;
+    try {
+      const folder = await exportFolder();
+      const file = new Blob([JSON.stringify({version: 1, ...project}, null, 2)], {type: 'application/json'});
+      await saveLocalFile(folder, `${fileStem(project)}.json`, file);
+      projectStatus.textContent = folder ? `Saved ${name} to ${folder.name}.` : `Project download started for ${name}.`;
+    } catch (error) {
+      projectStatus.textContent = error.name === 'AbortError' ? 'Project save canceled.' : 'Could not save the project file. Check the save folder and try again.';
+      return;
+    } finally {
+      saveProjectButton.disabled = false;
+    }
+    try {
+      localStorage.setItem(projectsKey, JSON.stringify(updated));
+    } catch {
+      projectStatus.textContent += ' The browser could not save a copy for the sidebar.';
+    }
+    projects = updated;
+    activeProjectId = project.id;
+    projectName.value = name;
+    renderProjects();
+    save(`Saved ${name}`);
+  });
+  nameInput.value = library.find(entry => entry.id === loadedPatternId)?.name || '';
+  projectName.value = currentProject()?.name ?? '';
+  render();
+  renderWorkspace();
+  renderProjects();
+</script>
+</body>
+</html>
