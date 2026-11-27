@@ -1,7 +1,8 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { createSearchLimiter, validateSearch } from './search.mjs';
+import { createPriceHistory, createSearchLimiter, validateSearch } from './search.mjs';
+import { FlightSearchError, searchFlights } from './providers.mjs';
 
 const assets = new Map([
   ['/', ['./index.html', 'text/html']],
@@ -11,23 +12,21 @@ const assets = new Map([
 ]);
 const gateway = process.env.FLIGHT_TRACKER_GATEWAY === '1';
 const allowedOrigin = process.env.FLIGHT_TRACKER_ORIGIN;
-const webhookToken = process.env.N8N_WEBHOOK_TOKEN;
 const volumePath = process.env.RAILWAY_VOLUME_MOUNT_PATH;
-const webhook = process.env.N8N_WEBHOOK_URL ??
-  'http://127.0.0.1:5678/webhook/flight-price-tracker';
+const providers = {
+  serpApiKey: process.env.SERPAPI_API_KEY?.trim(),
+  openAiKey: process.env.OPENAI_API_KEY?.trim(),
+  model: process.env.OPENAI_MODEL?.trim() || 'gpt-5-mini',
+};
+const liveSearch = Boolean(providers.serpApiKey && providers.openAiKey);
 
-if (gateway && (!allowedOrigin || !webhookToken || !volumePath || !process.env.N8N_WEBHOOK_URL)) {
-  throw new Error('Set FLIGHT_TRACKER_ORIGIN, N8N_WEBHOOK_URL and N8N_WEBHOOK_TOKEN, and attach a Railway volume.');
+if (gateway && (!allowedOrigin || !liveSearch || !volumePath)) {
+  throw new Error('Set FLIGHT_TRACKER_ORIGIN, SERPAPI_API_KEY and OPENAI_API_KEY, and attach a Railway volume.');
 }
 if (gateway) {
   const origin = new URL(allowedOrigin);
-  const upstream = new URL(webhook);
-  if (origin.protocol !== 'https:' || origin.origin !== allowedOrigin ||
-      !['http:', 'https:'].includes(upstream.protocol) ||
-      (upstream.protocol === 'http:' && !upstream.hostname.endsWith('.railway.internal')) ||
-      upstream.username || upstream.password || upstream.search || upstream.hash ||
-      upstream.pathname !== '/webhook/flight-price-tracker') {
-    throw new Error('Use a GitHub Pages HTTPS origin and an n8n production webhook on the Railway private network or HTTPS.');
+  if (origin.protocol !== 'https:' || origin.origin !== allowedOrigin) {
+    throw new Error('Use a GitHub Pages HTTPS origin without a path or trailing slash.');
   }
 }
 
@@ -42,6 +41,8 @@ const reserveSearch = await createSearchLimiter(
   limit('SEARCH_LIMIT_PER_10_MINUTES', 5),
   limit('SEARCH_LIMIT_PER_DAY', 20),
 );
+
+const savePrice = await createPriceHistory(volumePath ? join(volumePath, 'flight-price-history.json') : null);
 
 function send(response, status, data, type = 'application/json') {
   response.writeHead(status, {
@@ -132,6 +133,11 @@ createServer({ requestTimeout: 20_000 }, async (request, response) => {
     return;
   }
 
+  if (!liveSearch) {
+    message(response, 503, 'Live flight search is unavailable. You can still view sample results.');
+    return;
+  }
+
   try {
     const retryAfter = await reserveSearch();
     if (retryAfter) {
@@ -146,27 +152,17 @@ createServer({ requestTimeout: 20_000 }, async (request, response) => {
   }
 
   try {
-    const upstream = await fetch(webhook, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(webhookToken ? { 'X-Flight-Tracker-Token': webhookToken } : {}),
-      },
-      body: JSON.stringify(search),
-      signal: AbortSignal.timeout(120_000),
-      redirect: 'error',
-    });
-    if (!upstream.ok) {
-      console.error('n8n webhook returned status', upstream.status);
-      message(response, 502, 'The flight workflow could not complete the search.');
+    const analysis = await searchFlights(search, providers);
+    const result = await savePrice(search, analysis);
+    send(response, 200, JSON.stringify(result));
+  } catch (error) {
+    if (error instanceof FlightSearchError) {
+      console.error('Flight search failed with HTTP status', error.status);
+      message(response, error.status, error.message);
       return;
     }
-    send(response, 200, JSON.stringify(await upstream.json()));
-  } catch (error) {
-    const timedOut = error.name === 'TimeoutError';
-    message(response, timedOut ? 504 : 502, timedOut
-      ? 'The search timed out. Please try again later.'
-      : 'Could not read a response from the flight workflow.');
+    console.error('Could not save flight price history.');
+    message(response, 503, 'Flight price history is temporarily unavailable.');
   }
 }).listen(Number(process.env.PORT ?? 8080), gateway ? '0.0.0.0' : '127.0.0.1', () => {
   console.log('Flight Tracker is listening on port ' + (process.env.PORT ?? 8080));

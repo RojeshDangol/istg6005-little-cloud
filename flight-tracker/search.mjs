@@ -30,10 +30,7 @@ export function validateSearch(input, now = Date.now()) {
     throw new Error('Enter a USD budget from $0.01 to $100,000 with up to two decimal places.');
   }
 
-  const request = 'Find a round-trip flight from ' + origin + ' to ' + destination +
-    ' departing ' + outbound_date + ' and returning ' + return_date +
-    ' within a budget of ' + budget + ' USD.';
-  return { origin, destination, outbound_date, return_date, budget, request };
+  return { origin, destination, outbound_date, return_date, budget };
 }
 
 export async function createSearchLimiter(file, shortLimit, dailyLimit) {
@@ -74,5 +71,67 @@ export async function createSearchLimiter(file, shortLimit, dailyLimit) {
     });
     pending = reservation.catch(() => {});
     return reservation;
+  };
+}
+
+export async function createPriceHistory(file) {
+  let records = [];
+  if (file) {
+    try {
+      records = JSON.parse(await readFile(file, 'utf8'));
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+    }
+  }
+  if (!Array.isArray(records) || !records.every(row =>
+    /^[A-Z]{3}$/.test(row?.origin) && /^[A-Z]{3}$/.test(row?.destination) &&
+    row.origin !== row.destination && travelDate(row.outbound_date) < travelDate(row.return_date) &&
+    Number.isFinite(row.cheapest_price) && row.cheapest_price > 0 &&
+    typeof row.createdAt === 'string' && Number.isFinite(Date.parse(row.createdAt)))) {
+    throw new Error('Invalid flight price history.');
+  }
+  records.sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
+
+  let pending = Promise.resolve();
+  return (search, analysis) => {
+    const saved = pending.then(async () => {
+      const { origin, destination, outbound_date, return_date, budget } = search;
+      const itinerary = { origin, destination, outbound_date, return_date };
+      const current = analysis.cheapest_price;
+      const row = { ...itinerary, cheapest_price: current, createdAt: new Date().toISOString() };
+      const prices = records.filter(record =>
+        Object.keys(itinerary).every(field => record[field] === itinerary[field]))
+        .map(record => record.cheapest_price);
+      const previous = prices.at(-1) ?? null;
+      prices.push(current);
+
+      const average = prices.reduce((sum, price) => sum + price, 0) / prices.length;
+      const change = previous === null ? null : current - previous;
+      const updated = [...records, row];
+      if (file) {
+        await writeFile(file + '.next', JSON.stringify(updated), { mode: 0o600, flush: true });
+        await rename(file + '.next', file);
+      }
+      records = updated;
+
+      return {
+        ...itinerary,
+        budget,
+        historical_records: prices.length,
+        current_price: current,
+        previous_price: previous,
+        average_price: Number(average.toFixed(2)),
+        lowest_price: prices.reduce((lowest, price) => Math.min(lowest, price), current),
+        highest_price: prices.reduce((highest, price) => Math.max(highest, price), current),
+        price_change: change,
+        percentage_change: change === null ? null : Number((change / previous * 100).toFixed(2)),
+        trend: change === null ? 'INSUFFICIENT DATA' : change < 0 ? 'FALLING' : change > 0 ? 'RISING' : 'STABLE',
+        recommendation: previous === null ? 'COLLECT MORE DATA' : current > budget ? 'OVER BUDGET - MONITOR'
+          : current <= average ? 'CONSIDER BUYING' : 'MONITOR PRICE',
+        ai_analysis: analysis,
+      };
+    });
+    pending = saved.catch(() => {});
+    return saved;
   };
 }

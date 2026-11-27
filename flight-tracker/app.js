@@ -49,7 +49,7 @@ function formatDate(value) {
 function render(data, isSample) {
   const result = Array.isArray(data) ? data[0] : data;
   if (typeof result?.current_price !== 'number') {
-    throw new Error(result?.reason || result?.message || 'n8n returned an incomplete analysis.');
+    throw new Error(result?.reason || result?.message || 'The flight search returned an incomplete analysis.');
   }
 
   let analysis = result.ai_analysis;
@@ -125,7 +125,7 @@ function render(data, isSample) {
     options.append(element('h3', 'Flight options'), list);
     results.append(options);
   }
-  mode.textContent = isSample ? 'Sample results' : 'Workflow results';
+  mode.textContent = isSample ? 'Sample results' : 'Live results';
   mode.hidden = false;
   results.hidden = false;
   setStatus(isSample ? 'Saved example from the workflow.' : 'Search complete.');
