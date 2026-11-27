@@ -7,7 +7,7 @@
       "typeVersion": 1,
       "position": [
         0,
-        0
+        288
       ],
       "id": "2e1ca562-5c34-4a96-bddb-1d8bffa90bc6",
       "name": "When clicking ‘Execute workflow’"
@@ -19,7 +19,37 @@
             {
               "id": "104652c4-14b8-4864-ae74-af6c85adb212",
               "name": "request",
-              "value": "Find affordable round-trip flights from Pittsburgh to Kathmandu in February 2027 with a budget of $2000",
+              "value": "Your original flight request",
+              "type": "string"
+            },
+            {
+              "id": "8b7b9919-c60c-4385-84c5-2ad1cd62891b",
+              "name": "origin",
+              "value": "PIT",
+              "type": "string"
+            },
+            {
+              "id": "5c9205e5-e696-4dde-a0e5-e0fc40216690",
+              "name": "destination",
+              "value": "KTM",
+              "type": "string"
+            },
+            {
+              "id": "89946c67-cee3-4cdb-b7d1-3d371b9714fa",
+              "name": "outbound_date",
+              "value": "2027-02-05",
+              "type": "string"
+            },
+            {
+              "id": "bc79eda7-fb21-49f6-9d54-b8cd34e62452",
+              "name": "return_date",
+              "value": "2027-04-10",
+              "type": "string"
+            },
+            {
+              "id": "791b2f43-6c95-481d-aebf-70620a69c503",
+              "name": "budget",
+              "value": "2000",
               "type": "string"
             }
           ]
@@ -30,7 +60,7 @@
       "typeVersion": 3.5,
       "position": [
         224,
-        0
+        96
       ],
       "id": "e4a4c79b-2601-4b52-8499-513c4e51ef77",
       "name": "Edit Fields"
@@ -38,17 +68,19 @@
     {
       "parameters": {
         "promptType": "=define",
-        "text": "={{ 'You are an AI flight price analyst. Analyze the following flight search results. Identify the 5 cheapest available options, including airlines, prices, layovers, and travel duration. Compare them with a budget of $2000. Recommend the best option based on price and convenience. Do not invent prices or predict future prices without supporting data. If no flights are available, say so. Flight data: ' + JSON.stringify({best_flights: $json.best_flights, other_flights: $json.other_flights, price_insights: $json.price_insights}) }}",
+        "text": "=\n{{ 'You are an AI flight price analyst. Analyze the following flight search results. Departure airport: ' + $('Edit Fields').first().json.origin + '. Destination airport: ' + $('Edit Fields').first().json.destination + '. Departure date: ' + $('Edit Fields').first().json.outbound_date + '. Return date: ' + $('Edit Fields').first().json.return_date + '. Budget: $' + $('Edit Fields').first().json.budget + '. Identify up to 5 cheapest available options, including airlines, prices, layovers, and travel duration. Compare them with the provided budget. Recommend the best option based on price and convenience. Do not invent prices or predict future prices without supporting data. If no flights are available, say so. Flight data: ' + JSON.stringify({best_flights: $json.best_flights, other_flights: $json.other_flights, price_insights: $json.price_insights}) }}\n",
+        "hasOutputParser": true,
         "batching": {}
       },
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.9,
       "position": [
-        672,
+        880,
         0
       ],
       "id": "e5e29f17-f830-432b-8afd-3bd6133c1faf",
-      "name": "Basic LLM Chain"
+      "name": "Basic LLM Chain",
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -64,7 +96,7 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
       "position": [
-        384,
+        896,
         208
       ],
       "id": "a2779270-3da7-4818-bd72-bdbd53f0a28c",
@@ -89,20 +121,20 @@
               "value": "google_flights"
             },
             {
-              "name": "departure_id",
-              "value": "PIT"
+              "name": "=departure_id",
+              "value": "={{ $json.origin }}"
             },
             {
-              "name": "arrival_id",
-              "value": "KTM"
+              "name": "=arrival_id",
+              "value": "={{ $json.destination }}"
             },
             {
-              "name": "outbound_date",
-              "value": "2027-02-05"
+              "name": "=outbound_date",
+              "value": "={{ $json.outbound_date }}"
             },
             {
-              "name": "return_date",
-              "value": "2027-03-20"
+              "name": "=return_date",
+              "value": "={{ $json.return_date }}"
             },
             {
               "name": "currency",
@@ -127,7 +159,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.5,
       "position": [
-        448,
+        672,
         0
       ],
       "id": "fa0b5bf5-0c76-4b32-9381-6cfefa94d0c3",
@@ -141,13 +173,13 @@
     },
     {
       "parameters": {
-        "jsCode": "const data = $('HTTP Request').first().json;\n\nconst budget = 2000;\n\nconst flights = [\n  ...(data.best_flights || []),\n  ...(data.other_flights || [])\n].filter(f => typeof f.price === 'number');\n\nconst cheapest = flights.length\n  ? Math.min(...flights.map(f => f.price))\n  : null;\n\nreturn [{\n  json: {\n    budget: budget,\n    cheapest_price: cheapest,\n    flights_found: flights.length,\n    savings: cheapest !== null\n      ? budget - cheapest : null,\n    decision: cheapest === null\n      ? \"REVIEW\"\n      : cheapest <= budget\n        ? \"WITHIN BUDGET\"\n        : \"OVER BUDGET\",\n    ai_analysis: $input.first().json.text\n  }\n}];"
+        "jsCode": "\nconst data = $('HTTP Request').first().json;\nconst request = $('Edit Fields').first().json;\nconst budget = Number(request.budget);\n\nconst raw = $input.first().json;\nlet ai = raw.output ?? raw.text ?? raw;\n\nif (typeof ai === 'string') {\n  try {\n    ai = JSON.parse(ai);\n  } catch {\n    ai = null;\n  }\n}\n\nconst flights = [\n  ...(data.best_flights || []),\n  ...(data.other_flights || [])\n].filter(f => typeof f.price === 'number' && f.price > 0);\n\nconst prices = flights.map(f => f.price);\nconst cheapest = prices.length\n  ? Math.min(...prices) : null;\n\nconst errors = [];\n\nif (cheapest === null) {\n  errors.push(\"No flights found\");\n}\n\nif (!ai || ai.status !== \"success\") {\n  errors.push(\"Invalid AI output\");\n}\n\nif (ai?.cheapest_price !== cheapest) {\n  errors.push(\"AI cheapest price does not match flight data\");\n}\n\nif (!prices.includes(ai?.recommended_price)) {\n  errors.push(\"Recommended price not found in flight data\");\n}\n\nif (ai?.budget !== budget) {\n  errors.push(\"AI budget does not match input\");\n}\n\nif (!Array.isArray(ai?.flights) ||\n    ai.flights.length === 0 ||\n    ai.flights.length > 5 ||\n    ai.flights.some(f => !prices.includes(f.price))) {\n  errors.push(\"Invalid AI flight options\");\n}\n\nreturn [{\n  json: {\n    budget: budget,\n    cheapest_price: cheapest,\n    recommended_price: ai?.recommended_price ?? null,\n    flights_found: flights.length,\n    savings: cheapest !== null\n      ? budget - cheapest : null,\n    decision: errors.length > 0\n      ? \"REVIEW\"\n      : cheapest <= budget\n        ? \"WITHIN BUDGET\"\n        : \"OVER BUDGET\",\n    validation_passed: errors.length === 0,\n    review_reason: errors.join(\"; \"),\n    ai_analysis: JSON.stringify(ai ?? raw)\n  }\n}];\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        960,
-        0
+        1264,
+        -16
       ],
       "id": "c4739270-59b2-4f61-939e-3588a0a8566f",
       "name": "Code in JavaScript"
@@ -286,7 +318,7 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        1184,
+        1632,
         0
       ],
       "id": "e2af1e9f-650e-427d-ae85-b764cf4662da",
@@ -330,7 +362,7 @@
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1.1,
       "position": [
-        1408,
+        1856,
         0
       ],
       "id": "87150641-072e-4089-8a40-832509fa317e",
@@ -343,7 +375,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1632,
+        2080,
         0
       ],
       "id": "f3233092-2985-4a02-87dd-bbfb44af85fa",
@@ -362,11 +394,173 @@
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.3,
       "position": [
-        0,
-        -128
+        -16,
+        -64
       ],
       "id": "51fddd61-6e16-4320-a4df-cd550a5a7081",
       "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "250dcba1-dd7b-4fb2-88da-9b5b16c16bae",
+              "leftValue": "=\n{{ ($json.request?.trim() && /^[A-Z]{3}$/.test($json.origin) && /^[A-Z]{3}$/.test($json.destination) && $json.origin !== $json.destination && Date.parse($json.outbound_date) < Date.parse($json.return_date) && Number($json.budget) > 0) ? 'VALID' : 'INVALID' }}\n",
+              "rightValue": "VALID",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        448,
+        96
+      ],
+      "id": "ab3a311b-5883-41c9-8124-c34fed418081",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8dfee243-36d4-4125-bbe8-063a3449c3f3",
+              "name": "message",
+              "value": "Needs Review: Flight request is missing or incomplete.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        672,
+        192
+      ],
+      "id": "cfc953ac-9d62-4f44-8be2-33acdf66a8e3",
+      "name": "Needs Review"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "\n{\n  \"status\": \"success\",\n  \"origin\": \"PIT\",\n  \"destination\": \"KTM\",\n  \"outbound_date\": \"2027-02-05\",\n  \"return_date\": \"2027-03-20\",\n  \"budget\": 2000,\n  \"cheapest_price\": 1348,\n  \"recommended_price\": 1549,\n  \"within_budget\": true,\n  \"savings\": 652,\n  \"flights\": [\n    {\n      \"airlines\": \"Alaska and Qatar Airways\",\n      \"price\": 1348,\n      \"duration_minutes\": 2726,\n      \"layovers\": \"Seattle and Doha\"\n    }\n  ],\n  \"recommendation\": \"Choose the best balance of price and travel duration.\",\n  \"summary\": \"Five flight options were found within budget.\"\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1088,
+        208
+      ],
+      "id": "7610d86a-a61f-4226-bb4c-0bcbfa3173f8",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "cd934997-8057-44d5-9059-eb43d4c792e6",
+              "leftValue": "={{ $json.validation_passed }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1424,
+        -16
+      ],
+      "id": "e290fe23-270c-44f3-bcf9-fd4dbd945a58",
+      "name": "Validate AI Output"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "45663bae-36d0-4124-9443-6b94e4c1c931",
+              "name": "status",
+              "value": "NEEDS REVIEW",
+              "type": "string"
+            },
+            {
+              "id": "ddedee78-88ab-484d-b5eb-01b7ed9971fd",
+              "name": "=reason",
+              "value": "={{ $json.review_reason }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1584,
+        176
+      ],
+      "id": "27d8496b-2fe8-4fb2-b9be-5db57a77ebfe",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9514e39a-09a7-41f4-822a-6d54bad48ccc",
+              "name": "status",
+              "value": "NEEDS REVIEW",
+              "type": "string"
+            },
+            {
+              "id": "cb2f4ded-48cb-4217-ae29-4fce976b61e0",
+              "name": "reason",
+              "value": "AI processing or output formatting failed.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1328,
+        208
+      ],
+      "id": "d2280f18-4a29-4022-a336-b47fc2e8a0d8",
+      "name": "AI Processing Error"
     }
   ],
   "pinData": {},
@@ -386,7 +580,7 @@
       "main": [
         [
           {
-            "node": "HTTP Request",
+            "node": "If",
             "type": "main",
             "index": 0
           }
@@ -423,6 +617,13 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "AI Processing Error",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
@@ -430,7 +631,7 @@
       "main": [
         [
           {
-            "node": "Insert row",
+            "node": "Validate AI Output",
             "type": "main",
             "index": 0
           }
@@ -469,6 +670,53 @@
           }
         ]
       ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Needs Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate AI Output": {
+      "main": [
+        [
+          {
+            "node": "Insert row",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
@@ -479,7 +727,7 @@
     "timeSavedMode": "fixed",
     "callerPolicy": "workflowsFromSameOwner"
   },
-  "versionId": "1ebc57a3-5a29-4b62-8de5-afabf072768f",
+  "versionId": "24f079aa-17b3-4b2e-8350-76a43de980bf",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "bee0ebc01805d79c5906c260fcba97a4744cb12972ceb179e0502d7eae5da4e8"

@@ -113,73 +113,220 @@ Keep the terminal open and visit http://localhost:8000/ in your browser. Press C
 
 This project uses n8n and AI to help travelers find affordable flights and decide when to buy tickets. I created this workflow because checking flight prices manually every day takes time.
 
+The workflow automatically retrieves flight prices, analyzes available options, compares prices with the user's budget, and monitors historical price changes. It also validates user inputs and AI-generated results to reduce errors.
+
 ## Tools Used
 
 - n8n version: 2.35.7
+- Node.js version: 22
 - AI Provider: OpenAI
 - AI Model: gpt-5-mini
 - Flight Data: SerpApi (Google Flights)
 - Data Storage: n8n Data Tables
 - Programming Language: JavaScript
 - Environment: Docker Dev Container
+- Development Tool: Visual Studio Code
+- Version Control: GitHub
+
+## Required API Credentials
+
+To run this workflow, the instructor must recreate the following credentials in n8n:
+
+### OpenAI
+
+- Credential type: OpenAI API
+- Credential name: OpenAI account
+- Model: gpt-5-mini
+- Requires a valid OpenAI API key.
+
+### SerpApi
+
+- Credential type: Query Auth
+- Parameter name: api_key
+- Requires a valid SerpApi API key.
+
+API keys are stored securely in n8n credentials and are not included in the exported workflow.
+
+After importing the workflow, reconnect both credentials to their corresponding nodes.
 
 ## Input
 
+The workflow accepts the following input fields through the Edit Fields node:
+
+- Flight request
 - Departure airport: Pittsburgh (PIT)
 - Destination airport: Kathmandu (KTM)
 - Departure date: February 5, 2027
 - Return date: March 20, 2027
 - Budget: $2,000
 
+These values can be changed to search for different flights.
+
 ## How the Workflow Works
 
 1. Starts manually or automatically every day at 9 AM.
-2. Retrieves flight prices using SerpApi.
-3. Uses OpenAI to analyze available flights.
-4. Compares the cheapest flight with the user's budget.
-5. Saves flight prices in a data table.
-6. Retrieves historical flight prices.
-7. Calculates average, lowest, and highest recorded prices.
-8. Identifies price trends and provides buying recommendations.
+2. Collects flight details from the Edit Fields node.
+3. Validates the input using an IF node.
+4. Sends invalid or incomplete requests to Needs Review.
+5. Retrieves flight prices using SerpApi.
+6. Uses OpenAI to analyze available flights.
+7. Converts the AI response into structured JSON using the Structured Output Parser.
+8. Uses JavaScript to validate AI-generated prices against the original flight data.
+9. Compares flight prices with the user's budget.
+10. Uses a second IF node to determine whether the AI output is valid.
+11. Saves validated flight prices in a data table.
+12. Retrieves historical flight prices.
+13. Calculates average, lowest, and highest recorded prices.
+14. Identifies price trends and provides buying recommendations.
+
+## Input Validation
+
+The workflow checks whether:
+
+- The flight request is provided.
+- Airport codes contain three uppercase letters.
+- Departure and destination airports are different.
+- Travel dates are provided.
+- The return date is after the departure date.
+- The budget is greater than zero.
+
+If the input is invalid, the workflow sends the request to the Needs Review node without calling the flight API or OpenAI.
+
+## AI Output Validation
+
+The Structured Output Parser converts the AI response into organized JSON fields.
+
+JavaScript is then used to check whether:
+
+- The AI response has a successful status.
+- The cheapest price matches the original flight data.
+- The recommended price exists in the original flight data.
+- The budget matches the user's input.
+- The returned flight options contain valid prices.
+
+Only results that pass validation are saved in the data table.
+
+Invalid AI results are sent to the AI Needs Review node. AI processing and formatting errors are directed to a separate AI Processing Error node.
 
 ## Output
 
 The workflow provides:
 
 - Cheapest available flight
-- Available flight options
+- Up to five affordable flight options
+- Airline information
+- Flight duration and layovers
 - Budget comparison
 - Potential savings
 - AI-generated flight recommendations
 - Historical price comparison
 - Price trends
 - Buying recommendations
+- Needs Review messages for invalid inputs or results
 
-## Test Results
+## Example Output
 
-During testing, the workflow found a flight for $1,346 against a budget of $2,000, which resulted in potential savings of $654.
+During a successful workflow execution, the following results were generated:
+
+| Information | Result |
+|---|---|
+| Departure airport | PIT |
+| Destination airport | KTM |
+| Budget | $2,000 |
+| Cheapest flight | $1,348 |
+| AI recommended flight | $1,549 |
+| Maximum potential savings | $652 |
+| Savings on recommended flight | $451 |
+| Historical records | 3 |
+| Previous price | $1,346 |
+| Average price | $1,346.67 |
+| Lowest recorded price | $1,346 |
+| Highest recorded price | $1,348 |
+| Price change | $2 |
+| Percentage change | 0.15% |
+| Price trend | RISING |
+| Recommendation | MONITOR PRICE |
+
+The AI recommended the $1,549 flight because it offered a better balance between price, travel duration, and layovers.
+
+## Testing
+
+Three different input cases were used to evaluate the workflow.
+
+| Test | Input | Expected Result |
+|---|---|---|
+| Normal | Valid flight details and budget | Complete flight and historical price analysis |
+| Incomplete | Missing departure date | Needs Review |
+| Contradictory | Return date before departure date | Needs Review |
+
+The normal request successfully generated flight recommendations and historical price analysis.
+
+Detailed test results are documented in `evidence/test-results.md`.
+
+## Workflow Improvements
+
+During testing, I discovered that the original Boolean validation condition did not consistently send requests to the correct branch.
+
+I replaced the Boolean condition with a string-based validation condition that returns either VALID or INVALID. I also used a regular expression to handle possible extra spaces or line breaks.
+
+The revised condition successfully accepted valid input during retesting. This improvement was made to prevent invalid requests from reaching the flight API and to improve workflow reliability.
+
+I also added structured AI output, AI result validation, and separate error-handling branches.
 
 ## Automation
 
 The workflow is configured to run every day at 9 AM using the America/New_York timezone. The n8n container must remain running for scheduled executions.
 
+Each successful execution stores flight price information, allowing the workflow to build historical data over time.
+
 ## How to Run
 
 1. Open the repository in VS Code.
 2. Start the dev container.
-3. Start n8n and open http://localhost:5678.
-4. Import workflows/ai-flight-price-tracker.json.
-5. Configure OpenAI and SerpApi credentials.
-6. Create the required historical price data table and select it in the workflow.
-7. Execute the workflow manually or publish it for daily automation.
+3. Open the terminal and install the required dependencies:
+
+   ```
+   cd /data/automation
+   npm ci
+   ```
+
+4. Start n8n:
+
+   ```
+   N8N_USER_FOLDER=/data/.runtime/n8n N8N_LISTEN_ADDRESS=127.0.0.1 npx n8n start
+   ```
+
+5. Open http://localhost:5678.
+6. Import `workflows/ai-flight-price-tracker.json`.
+7. Configure OpenAI and SerpApi credentials.
+8. Create the required historical price data table and select it in the workflow.
+9. Enter the flight details in the Edit Fields node.
+10. Execute the workflow manually or publish it for daily automation.
 
 ## Security
 
-API credentials are managed through n8n credentials. Runtime data and environment files are excluded from Git using .gitignore.
+API credentials are managed through n8n credentials. API keys are not hardcoded into the workflow.
+
+Runtime data, environment files, local databases, and installed dependencies are excluded from Git using `.gitignore`.
+
+## AI Assistance
+
+I used AI assistance to help design the workflow, create prompts, write JavaScript code, configure validation, and troubleshoot errors.
+
+I personally configured the nodes, connected the APIs, executed the workflow, reviewed the results, and tested the validation conditions.
+
+AI helped me develop the workflow, but I was responsible for checking its functionality and making improvements.
 
 ## Limitations
 
-The workflow needs historical data to identify meaningful price trends. Recommendations are based on available data and do not guarantee future flight prices.
+- The workflow needs more historical data to identify meaningful price trends.
+- Flight prices and availability can change at any time.
+- The workflow depends on external APIs and internet access.
+- OpenAI and SerpApi may have usage costs and limits.
+- AI recommendations may contain errors.
+- Airport code validation checks the format but does not confirm that the airport exists.
+- Flight details must currently be entered into separate input fields.
+- The workflow identifies historical price trends but does not reliably predict future flight prices.
 
 ## Future Improvements
 
@@ -187,4 +334,7 @@ The workflow needs historical data to identify meaningful price trends. Recommen
 - Support for multiple destinations.
 - Flexible travel dates.
 - Historical price charts.
-- Improved flight price prediction.
+- Automatic extraction of travel details from natural-language requests.
+- Machine learning for flight price prediction.
+- Improved error handling.
+- A user-friendly interface for entering flight requests.
