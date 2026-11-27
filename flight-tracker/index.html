@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Search round-trip fares and compare them with your budget and past prices.">
+<title>Flight Tracker</title>
+<link rel="stylesheet" href="./style.css">
+<script type="module" src="./app.js"></script>
+</head>
+<body>
+<header class="top">
+  <div class="wrap masthead">
+    <div class="brand"><span class="mark" aria-hidden="true">✈</span> Flight Tracker</div>
+    <span class="currency">USD · Round trip</span>
+  </div>
+</header>
+<main class="wrap">
+  <section class="hero" aria-labelledby="title">
+    <div>
+      <h1 id="title">Track your<br>flight price.</h1>
+      <p>Compare today’s fares with your budget and past prices before you book.</p>
+    </div>
+    <div class="route" aria-hidden="true">
+      <span id="hero-origin">PIT</span>
+      <div class="route-line"><i></i><b>✈</b><i></i></div>
+      <span id="hero-destination">KTM</span>
+    </div>
+  </section>
+
+  <div class="dashboard">
+    <section class="panel search" aria-labelledby="search-title">
+      <h2 id="search-title">Search flights</h2>
+      <form id="search" method="post">
+        <div class="fields">
+          <label>From <input name="origin" value="PIT" required maxlength="3" pattern="[A-Za-z]{3}" autocapitalize="characters" spellcheck="false" title="Three-letter airport code"></label>
+          <label>To <input name="destination" value="KTM" required maxlength="3" pattern="[A-Za-z]{3}" autocapitalize="characters" spellcheck="false" title="Three-letter airport code"></label>
+          <label>Departure <input name="outbound_date" type="date" required></label>
+          <label>Return <input name="return_date" type="date" required></label>
+        </div>
+        <label>Budget (USD) <input name="budget" type="number" value="2000" min="0.01" step="0.01" required></label>
+        <button class="primary" type="submit">Analyze fares</button>
+        <button class="secondary" type="button" id="sample">View sample results</button>
+      </form>
+    </section>
+
+    <section class="panel results" aria-labelledby="results-title">
+      <div class="results-heading"><h2 id="results-title">Price analysis</h2><span id="mode" class="pill" hidden></span></div>
+      <p id="status" role="status">Run a search or view the sample results.</p>
+      <div id="results" hidden></div>
+    </section>
+  </div>
+</main>
+</body>
+</html>

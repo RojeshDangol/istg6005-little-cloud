@@ -1,7 +1,7 @@
 {
   "name": "ai-cloud-devops-devcontainer",
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
-  "forwardPorts": [5678],
+  "forwardPorts": [5678, 8080],
   "mounts": [
     "source=${localWorkspaceFolder},target=/data,type=bind"
   ],

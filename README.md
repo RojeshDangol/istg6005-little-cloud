@@ -303,6 +303,43 @@ Each successful execution stores flight price information, allowing the workflow
 9. Enter the flight details in the Edit Fields node.
 10. Execute the workflow manually or publish it for daily automation.
 
+## Flight Tracker Dashboard on GitHub Pages
+
+The dashboard sends public searches to a separate Railway gateway. The gateway validates airport codes, calendar dates, and USD budget before calling n8n. It allows 5 searches per rolling 10 minutes and 20 per rolling 24 hours across all visitors by default. Each forwarded attempt counts, even if n8n fails. The quota is stored on the gateway's Railway volume and applies only to public searches.
+
+### Connect the public n8n workflow
+
+1. In the existing Railway n8n instance, import `workflows/flight-price-tracker-public-search.json` as a **new workflow**. Your scheduled workflow can continue using its current configuration.
+2. Select your existing OpenAI and SerpApi credentials and the existing `flight_price_history` table in both data table nodes.
+3. On **Flight Tracker Webhook**, create and select a **Header Auth** credential. Use `X-Flight-Tracker-Token` as the header name and a long random value as the token. Publish this new workflow and copy its production URL.
+
+### Deploy the Railway gateway
+
+Add a **separate Railway service** from this repository in the same environment as n8n. Use the repository root as the build context. Attach a volume such as `/rate-limit` to the gateway and set its healthcheck path to `/health`.
+
+| Railway gateway variable | Value |
+| --- | --- |
+| `RAILWAY_DOCKERFILE_PATH` | `/flight-tracker/Dockerfile` |
+| `FLIGHT_TRACKER_ORIGIN` | The Pages origin, such as `https://rojeshdangol.github.io`, without the repository path or trailing slash |
+| `N8N_WEBHOOK_URL` | The n8n production URL ending in `/webhook/flight-price-tracker`. Use the private service hostname and actual n8n listening port when available, for example `http://n8n.railway.internal:5678/webhook/flight-price-tracker` |
+| `N8N_WEBHOOK_TOKEN` | The matching Header Auth token |
+| `SEARCH_LIMIT_PER_10_MINUTES` | Optional shared limit. Defaults to `5` |
+| `SEARCH_LIMIT_PER_DAY` | Optional shared limit. Defaults to `20` |
+
+Railway supplies `RAILWAY_VOLUME_MOUNT_PATH` and `PORT`. Generate a public domain for the gateway. Keep the OpenAI and SerpApi credentials in n8n and the webhook token in n8n and the gateway. Only the gateway URL goes to GitHub.
+
+### Publish the frontend
+
+1. In GitHub, under **Settings → Secrets and variables → Actions → Variables**, set `FLIGHT_TRACKER_API_URL` to the gateway's HTTPS URL ending in `/api/search`.
+2. Under **Settings → Pages**, choose **GitHub Actions** as the source.
+3. Push the changes to `main` or run **Deploy flight tracker to GitHub Pages** from the Actions tab. The deployment summary links to the site. Rerun the deployment after changing the gateway URL.
+
+**View sample results** works before the gateway is configured.
+
+### Run locally
+
+Run `node flight-tracker/server.mjs` and open [http://localhost:8080](http://localhost:8080). Set `N8N_WEBHOOK_TOKEN` in your shell for live searches. The local gateway defaults to the n8n production webhook on port 5678. For a test run, set `N8N_WEBHOOK_URL` to `http://127.0.0.1:5678/webhook-test/flight-price-tracker` and select **Listen for test event** in n8n before submitting.
+
 ## Security
 
 API credentials are managed through n8n credentials. API keys are not hardcoded into the workflow.
