@@ -104,3 +104,87 @@ Keep the terminal open and visit http://localhost:8000/ in your browser. Press C
 - Recording won't start. Open the app at http://localhost:8000/ and allow microphone access in the browser's site settings. If you're using another port, open the app at that localhost address.
 
 
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+
+# Week 6 - AI Flight Price Tracker
+
+## Project Overview
+
+This project uses n8n and AI to help travelers find affordable flights and decide when to buy tickets. I created this workflow because checking flight prices manually every day takes time.
+
+## Tools Used
+
+- n8n version: 2.35.7
+- AI Provider: OpenAI
+- AI Model: gpt-5-mini
+- Flight Data: SerpApi (Google Flights)
+- Data Storage: n8n Data Tables
+- Programming Language: JavaScript
+- Environment: Docker Dev Container
+
+## Input
+
+- Departure airport: Pittsburgh (PIT)
+- Destination airport: Kathmandu (KTM)
+- Departure date: February 5, 2027
+- Return date: March 20, 2027
+- Budget: $2,000
+
+## How the Workflow Works
+
+1. Starts manually or automatically every day at 9 AM.
+2. Retrieves flight prices using SerpApi.
+3. Uses OpenAI to analyze available flights.
+4. Compares the cheapest flight with the user's budget.
+5. Saves flight prices in a data table.
+6. Retrieves historical flight prices.
+7. Calculates average, lowest, and highest recorded prices.
+8. Identifies price trends and provides buying recommendations.
+
+## Output
+
+The workflow provides:
+
+- Cheapest available flight
+- Available flight options
+- Budget comparison
+- Potential savings
+- AI-generated flight recommendations
+- Historical price comparison
+- Price trends
+- Buying recommendations
+
+## Test Results
+
+During testing, the workflow found a flight for $1,346 against a budget of $2,000, which resulted in potential savings of $654.
+
+## Automation
+
+The workflow is configured to run every day at 9 AM using the America/New_York timezone. The n8n container must remain running for scheduled executions.
+
+## How to Run
+
+1. Open the repository in VS Code.
+2. Start the dev container.
+3. Start n8n and open http://localhost:5678.
+4. Import workflows/ai-flight-price-tracker.json.
+5. Configure OpenAI and SerpApi credentials.
+6. Create the required historical price data table and select it in the workflow.
+7. Execute the workflow manually or publish it for daily automation.
+
+## Security
+
+API credentials are managed through n8n credentials. Runtime data and environment files are excluded from Git using .gitignore.
+
+## Limitations
+
+The workflow needs historical data to identify meaningful price trends. Recommendations are based on available data and do not guarantee future flight prices.
+
+## Future Improvements
+
+- Email notifications when prices decrease.
+- Support for multiple destinations.
+- Flexible travel dates.
+- Historical price charts.
+- Improved flight price prediction.

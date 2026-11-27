@@ -1,0 +1,490 @@
+{
+  "name": "AI Flight Price Tracker",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "2e1ca562-5c34-4a96-bddb-1d8bffa90bc6",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "104652c4-14b8-4864-ae74-af6c85adb212",
+              "name": "request",
+              "value": "Find affordable round-trip flights from Pittsburgh to Kathmandu in February 2027 with a budget of $2000",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        224,
+        0
+      ],
+      "id": "e4a4c79b-2601-4b52-8499-513c4e51ef77",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "promptType": "=define",
+        "text": "={{ 'You are an AI flight price analyst. Analyze the following flight search results. Identify the 5 cheapest available options, including airlines, prices, layovers, and travel duration. Compare them with a budget of $2000. Recommend the best option based on price and convenience. Do not invent prices or predict future prices without supporting data. If no flights are available, say so. Flight data: ' + JSON.stringify({best_flights: $json.best_flights, other_flights: $json.other_flights, price_insights: $json.price_insights}) }}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        672,
+        0
+      ],
+      "id": "e5e29f17-f830-432b-8afd-3bd6133c1faf",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-5-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        384,
+        208
+      ],
+      "id": "a2779270-3da7-4818-bd72-bdbd53f0a28c",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "s16Rhapy6j94k9j1",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://serpapi.com/search.json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "engine",
+              "value": "google_flights"
+            },
+            {
+              "name": "departure_id",
+              "value": "PIT"
+            },
+            {
+              "name": "arrival_id",
+              "value": "KTM"
+            },
+            {
+              "name": "outbound_date",
+              "value": "2027-02-05"
+            },
+            {
+              "name": "return_date",
+              "value": "2027-03-20"
+            },
+            {
+              "name": "currency",
+              "value": "USD"
+            },
+            {
+              "name": "hl",
+              "value": "en"
+            },
+            {
+              "name": "type",
+              "value": "1"
+            },
+            {
+              "name": "adults",
+              "value": "1"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        448,
+        0
+      ],
+      "id": "fa0b5bf5-0c76-4b32-9381-6cfefa94d0c3",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "BIlH5uR5eiRRzOy9",
+          "name": "Query Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $('HTTP Request').first().json;\n\nconst budget = 2000;\n\nconst flights = [\n  ...(data.best_flights || []),\n  ...(data.other_flights || [])\n].filter(f => typeof f.price === 'number');\n\nconst cheapest = flights.length\n  ? Math.min(...flights.map(f => f.price))\n  : null;\n\nreturn [{\n  json: {\n    budget: budget,\n    cheapest_price: cheapest,\n    flights_found: flights.length,\n    savings: cheapest !== null\n      ? budget - cheapest : null,\n    decision: cheapest === null\n      ? \"REVIEW\"\n      : cheapest <= budget\n        ? \"WITHIN BUDGET\"\n        : \"OVER BUDGET\",\n    ai_analysis: $input.first().json.text\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        0
+      ],
+      "id": "c4739270-59b2-4f61-939e-3588a0a8566f",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "bf7Ricfhggcy1t1w",
+          "mode": "list",
+          "cachedResultName": "flight_price_history",
+          "cachedResultUrl": "/projects/fioPJZMrYkIxUUGA/datatables/bf7Ricfhggcy1t1w"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "origin": "={{ $('HTTP Request').first().json.search_parameters.departure_id }}",
+            "destination": "={{ $('HTTP Request').first().json.search_parameters.arrival_id }}",
+            "outbound_date": "={{ $('HTTP Request').first().json.search_parameters.outbound_date }}",
+            "return_date": "={{ $('HTTP Request').first().json.search_parameters.return_date }}",
+            "budget": "={{ $json.budget }}",
+            "cheapest_price": "={{ $json.cheapest_price }}",
+            "flights_found": "={{ $json.flights_found }}",
+            "savings": "={{ $json.savings }}",
+            "decision": "={{ $json.decision }}",
+            "ai_analysis": "={{ $json.ai_analysis }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "origin",
+              "displayName": "origin",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "destination",
+              "displayName": "destination",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "outbound_date",
+              "displayName": "outbound_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "return_date",
+              "displayName": "return_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "budget",
+              "displayName": "budget",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "cheapest_price",
+              "displayName": "cheapest_price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "flights_found",
+              "displayName": "flights_found",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "savings",
+              "displayName": "savings",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "decision",
+              "displayName": "decision",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "ai_analysis",
+              "displayName": "ai_analysis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1184,
+        0
+      ],
+      "id": "e2af1e9f-650e-427d-ae85-b764cf4662da",
+      "name": "Insert row"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "bf7Ricfhggcy1t1w",
+          "mode": "list",
+          "cachedResultName": "flight_price_history",
+          "cachedResultUrl": "/projects/fioPJZMrYkIxUUGA/datatables/bf7Ricfhggcy1t1w"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "origin",
+              "keyValue": "={{ $json.origin }}"
+            },
+            {
+              "keyName": "destination",
+              "keyValue": "={{ $json.destination }}"
+            },
+            {
+              "keyName": "outbound_date",
+              "keyValue": "={{ $json.outbound_date }}"
+            },
+            {
+              "keyName": "return_date",
+              "keyValue": "={{ $json.return_date }}"
+            }
+          ]
+        },
+        "returnAll": true,
+        "orderBy": true,
+        "orderByDirection": "ASC"
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1408,
+        0
+      ],
+      "id": "87150641-072e-4089-8a40-832509fa317e",
+      "name": "Get row(s)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const records = $input.all()\n  .map(item => item.json)\n  .filter(r => r.cheapest_price != null &&\n    Number(r.cheapest_price) > 0)\n  .sort((a, b) =>\n    new Date(a.createdAt) - new Date(b.createdAt));\n\nif (records.length === 0) {\n  return [{ json: { message: \"No valid price data\" } }];\n}\n\nconst prices = records.map(r => Number(r.cheapest_price));\nconst latest = records[records.length - 1];\nconst current = prices[prices.length - 1];\nconst previous = prices.length > 1\n  ? prices[prices.length - 2] : null;\n\nconst average = prices.reduce((a, b) => a + b, 0)\n  / prices.length;\n\nconst change = previous !== null\n  ? current - previous : null;\n\nconst percentChange = previous !== null\n  ? (change / previous) * 100 : null;\n\nlet trend = \"INSUFFICIENT DATA\";\nlet recommendation = \"COLLECT MORE DATA\";\n\nif (prices.length >= 2) {\n  trend = change < 0 ? \"FALLING\"\n    : change > 0 ? \"RISING\" : \"STABLE\";\n\n  recommendation = current > latest.budget\n    ? \"OVER BUDGET - MONITOR\"\n    : current <= average\n      ? \"CONSIDER BUYING\"\n      : \"MONITOR PRICE\";\n}\n\nreturn [{\n  json: {\n    origin: latest.origin,\n    destination: latest.destination,\n    outbound_date: latest.outbound_date,\n    return_date: latest.return_date,\n    historical_records: prices.length,\n    current_price: current,\n    previous_price: previous,\n    average_price: Number(average.toFixed(2)),\n    lowest_price: Math.min(...prices),\n    highest_price: Math.max(...prices),\n    price_change: change,\n    percentage_change: percentChange !== null\n      ? Number(percentChange.toFixed(2)) : null,\n    budget: latest.budget,\n    trend: trend,\n    recommendation: recommendation,\n    ai_analysis: latest.ai_analysis\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1632,
+        0
+      ],
+      "id": "f3233092-2985-4a02-87dd-bbfb44af85fa",
+      "name": "Historical Price Analysis"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        -128
+      ],
+      "id": "51fddd61-6e16-4320-a4df-cd550a5a7081",
+      "name": "Schedule Trigger"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Insert row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert row": {
+      "main": [
+        [
+          {
+            "node": "Get row(s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s)": {
+      "main": [
+        [
+          {
+            "node": "Historical Price Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "1ebc57a3-5a29-4b62-8de5-afabf072768f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "bee0ebc01805d79c5906c260fcba97a4744cb12972ceb179e0502d7eae5da4e8"
+  },
+  "nodeGroups": [],
+  "id": "S0xVVUayaMTv1MIs",
+  "tags": []
+}
